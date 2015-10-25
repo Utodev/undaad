@@ -1,8 +1,9 @@
 <?php
 
 
-// Copyright (C) 2008-2010, 2013 José Manuel Ferrer Ortiz
-// Fixed and completed by Uto (2015)
+// Original work copyright (C) 2008-2010, 2013 José Manuel Ferrer Ortiz
+// Fixes and completion copyright (C) Uto (2015)
+
 
 
 // Header of the DDB files
