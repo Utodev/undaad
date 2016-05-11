@@ -120,7 +120,7 @@ array(2,'GT     '), //  14
 array(2,'LT     '), //  15
 array(1,'ADJECT1'), //  16
 array(1,'ADVERB '), //  17
-array(0,'INVEN  '), //  18
+array(2,'SFX    '), //  18
 array(0,'DESC   '), //  19
 array(0,'QUIT   '), //  20
 array(0,'END    '), //  21
