@@ -127,8 +127,8 @@ array(0,'END    '), //  21
 array(0,'DONE   '), //  22
 array(0,'OK     '), //  23
 array(0,'ANYKEY '), //  24
-array(0,'SAVE   '), //  25
-array(0,'LOAD   '), //  26
+array(1,'SAVE   '), //  25
+array(1,'LOAD   '), //  26
 array(1,'DPRINT '), //  27 *
 array(1,'DISPLAY'), //  28 *
 array(0,'CLS    '), //  29
@@ -163,7 +163,7 @@ array(0,'SPACE  '), //  57 COPYOO in old games
 array(1,'HASAT  '), //  58 COPYFO in old games
 array(1,'HASNAT '), //  59 COPYFF in old games
 array(0,'LISTOBJ'), //  60
-array(1,'EXTERN '), //  61
+array(2,'EXTERN '), //  61
 array(0,'RAMSAVE'), //  62
 array(1,'RAMLOAD'), //  63
 array(2,'BEEP   '), //  64
