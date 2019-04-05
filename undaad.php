@@ -10,7 +10,7 @@
 
 // POSITION  LENGTH    CONTAINS    
 // 0         1 byte    Seems to contain DAAD version number (1 for Aventura Original and Jabato, 1989, 2 for the rest)
-// 1         1 byte    Always contains 1, not identified
+// 1         1 byte    High nibble: target machine | Low nibble: target language
 // 2         1 byte    Always contains 95, not identified
 // 3         1 byte    Number of object descriptions
 // 4         1 byte    Number of location descriptions
@@ -65,6 +65,11 @@ function usageInfo()
  echo "/h /H : show only header data";
 }
 
+function printSeparator()
+{
+ echo ";------------------------------------------------------------------------------\n";
+}
+
 //######################################## GLOBAL VARS ##########################################
 
 // Handle big endian/little endian games
@@ -88,18 +93,48 @@ $words=array();
 
 // Predefined tables
 
+// Supported machines
+$machines = array(
+  0  => 'IBM PC',
+  1  => 'Spectrum',
+  2  => 'Commodore 64',
+  3  => 'Amstrad CPC',
+  4  => 'MSX',
+  5  => 'Atari ST',
+  6  => 'Amiga',
+  7  => 'PCW',
+  8  => 'PC VGA',
+  9  => 'PC EGA',
+  10 => 'PC CGA',
+  11 => 'Spectrum 48K',
+  12 => 'Spectrum Plus 3'
+);
+
+$languages = array(
+  0 => "English",
+  1 => "Spanish"
+);
+
 // Vocabulary word types
 $wordTypes = array("verb", "adverb", "noun", "adjective", "preposition",
-                         "conjunction", "pronoun");
+                         "conjugation", "pronoun");
 
 $wordParamTypes = array(
-  "17"=>1, // ADVERB
-  "69"=>2, // NOUN2
-  "16"=>3, // ADJECT1
-  "70"=>3, // ADJECT2
-  "68"=>4  // PREP
-  );
+//      array(param.no => wordType)
+  "36"=>array(0 => 0, 1 => 2), // SYNONYM
+  "17"=>array(0 => 1), // ADVERB
+  "69"=>array(0 => 2), // NOUN2
+  "16"=>array(0 => 3), // ADJECT1
+  "70"=>array(0 => 3), // ADJECT2
+  "68"=>array(0 => 4)  // PREP
+);
 
+$specialLocs = array(
+  252 => '_',
+  253 => 'WORN',
+  254 => 'CARRIED',
+  255 => 'HERE'
+);
 
 $condacts = array(
 array(1,'AT     '), //   0 00
@@ -335,7 +370,10 @@ if ($file_length!=filesize($argv[1])) // Not matching, check offset 30
 // Read header data
 fseek($file, 0);
 $daad_version = fgetb($file);
-$signature = (fgetb($file) << $SHR1) | (fgetb($file) << $SHR2 );
+$daad_machine = fgetb($file);
+$daad_language = $daad_machine & 0x0F;
+$daad_machine = ($daad_machine >> 4) & 0x0F;
+$signature = fgetb($file);
 $num_objs     = fgetb($file);
 $num_locs     = fgetb($file);
 $num_msgs_usr = fgetb($file);
@@ -386,7 +424,9 @@ echo ";-------------------------------------------------------------------------
 echo ";---------------------   An UnDAADed game o'hacker   -----------------------\n";
 echo ";---------------------------------------------------------------------------\n";
 echo "; Version   : $daad_version\n";
-echo "; Signature : ".strtoupper(str_pad(dechex($signature),4,'0',STR_PAD_LEFT))."h\n";  
+echo "; Machine   : ".$machines[$daad_machine]." ($daad_machine)\n";
+echo "; Language  : ".$languages[$daad_language]." ($daad_language)\n";
+echo "; Signature : ".strtoupper(str_pad(dechex($signature),2,'0',STR_PAD_LEFT))."h\n";  
 echo "; Data      : " . ($isLittleEndian ? "Little-endian" : "Big-endian") . "\n";
 echo "; Objects   : $num_objs\n";
 echo "; Locations : $num_locs\n";
@@ -395,6 +435,7 @@ echo "; Sys Mess  : $num_msgs_sys\n";
 echo "; Processes : $num_procs\n";
 echo ";---------------------------------------------------------------------------\n;\n;\n";
 echo "; Tokens addr    : ".strtoupper(str_pad(dechex($pos_tokens),4,'0',STR_PAD_LEFT))."h\n";  
+echo "; Procs addr     : ".strtoupper(str_pad(dechex($pos_list_pos_procs),4,'0',STR_PAD_LEFT))."h\n";  
 echo "; Objs addr      : ".strtoupper(str_pad(dechex($pos_list_pos_objs),4,'0',STR_PAD_LEFT))."h\n";  
 echo "; Locs addr      : ".strtoupper(str_pad(dechex($pos_list_pos_locs),4,'0',STR_PAD_LEFT))."h\n";  
 echo "; UsrMsg addr    : ".strtoupper(str_pad(dechex($pos_list_pos_msgs_usr),4,'0',STR_PAD_LEFT))."h\n";  
@@ -436,7 +477,8 @@ if ($pos_tokens)
 
 
 //VOCABULARY
-echo "/VOC\n";
+printSeparator();
+echo "/VOC    ;Vocabulary\n";
 fseek ($file, $pos_vocabulary);
 while (1)
 {
@@ -447,14 +489,15 @@ while (1)
   $id  = fgetb($file);
   $wordType = fgetb($file);
   $wordTypeText = $wordTypes[$wordType];
-  echo "$currentWord\t\t$id\t\t$wordTypeText\n";  
+  echo str_pad($currentWord, 8).str_pad($id, 8).$wordTypeText."\n";
   if (!isset($words[$wordType])) $words[$wordType] = array();
   $words[$wordType][$id]=$currentWord;
 }
 for ($i=0;$i<7;$i++) $words[$i][255] = '_';
 
 // SYSTEM MESSAGES
-echo "/STX\n";
+printSeparator();
+echo "/STX    ;System messages\n";
 for ($i = 0; $i < $num_msgs_sys; $i++)
 {
   echo "/$i\n";
@@ -469,7 +512,8 @@ for ($i = 0; $i < $num_msgs_sys; $i++)
 }
 
 // USER MESSAGES
-echo "/MTX\n";
+printSeparator();
+echo "/MTX    ;Messages\n";
 for ($i = 0; $i < $num_msgs_usr; $i++)
 {
   echo "/$i\n";
@@ -484,7 +528,8 @@ for ($i = 0; $i < $num_msgs_usr; $i++)
 }
 
 // OBJECT DESCRIPTIONS
-echo "/OTX\n";
+printSeparator();
+echo "/OTX    ;Object Texts\n";
 for ($i = 0; $i < $num_objs; $i++)
 {
   echo "/$i\n";
@@ -499,7 +544,7 @@ for ($i = 0; $i < $num_objs; $i++)
 }
 
 // LOCATIONS (may be compressed)
-echo "/LTX\n";
+echo "/LTX    ;Location Texts\n";
 for ($i = 0; $i < $num_locs; $i++)
   {
     echo "/$i\n";
@@ -523,7 +568,8 @@ for ($i = 0; $i < $num_locs; $i++)
 
 
   // CONNECTIONS
-  echo "/CON\n";
+  printSeparator();
+  echo "/CON    ;Conections\n";
   for ($i = 0; $i < $num_locs; $i++)
   {
     echo "/$i\n";
@@ -539,68 +585,74 @@ for ($i = 0; $i < $num_locs; $i++)
   }
 
   // OBJECT DATA
-  echo "/OBJ\n";
+  printSeparator();
+  echo "/OBJ    ;Objects data\n";
+  echo ";obj.no  starts.at   weight    c w  5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0    noun    adjective\n";
   for ($i = 0; $i < $num_objs; $i++)
   {
     fseek ($file, $pos_locs_objs + $i);
-    echo "\n/$i ";
+    echo str_pad("/$i ", 10);
     // initially at
-    echo fgetb($file) . ' '; 
+    $loc = fgetb($file);
+    echo str_pad(isset($specialLocs[$loc]) ? $specialLocs[$loc] : $loc, 13);
     // Object attributes
     fseek ($file, $pos_attr_objs + $i );
-    $attr = fgetb($file) . ' ';  //weight
-    $weigth = $attr & 0x3F;
-    echo "$weigth ";
+    $attr = fgetb($file);  //weight
+    $weigth = $attr[0] & 0x3F;
+    echo str_pad($weigth, 8);
     $container = ($attr & 0x40) ? 'Y' : '_';
     echo "$container ";
     $worn = ($attr & 0x80) ? 'Y' : '_';
-    echo "$worn ";
+    echo "$worn  ";
 
-    if ($has_extattr)
+    if (!$isOldGame)
     {
       fseek ($file, $pos_extattr_objs + ($i * 2) );
       $attrs = ((fgetb($file)<<$SHR1)) | ((fgetb($file)<<$SHR2));
       for ($j=15;$j>=0;$j--)
          echo ($attrs& (1<<$j)) ? 'Y ':'_ ';
+      echo "   ";
     }
-    else echo "_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ ";
+    else echo "_ _  _ _ _ _ _ _ _ _ _ _ _ _ _ _    ";
 
     // Object noun + adjective
     fseek ($file, $pos_noms_objs + ($i *2));
     $noun_id = fgetb($file);
     $adject_id = fgetb($file);
-    if ($noun_id == 255) echo "_"; else echo $words[2][$noun_id];
+    echo str_pad($words[2][$noun_id], 7);
     echo ' ';
     if ($adject_id == 255) echo "_"; else echo $words[3][$adject_id];
-    echo ' ';
-
+    echo " \n";
   }
 
   // PROCESSES
   for ($i=0;$i<$num_procs;$i++)
   {
-   echo "/PRO $i\n"; 
-   for ($entry = 0; ; $entry++)
-   {
-    fseek ($file, $pos_list_pos_procs + (2 * $i));
-    fseek ($file, (fgetb($file) << $SHR1) | (fgetb($file)) << $SHR2);
-    fseek ($file, $entry*4, SEEK_CUR);
-    $c = fgetb($file);
-    if ($c == 0)  break; // Process end
-    echo "\n";
-    if ($c == 255) echo  "_ "; else
+    printSeparator();
+    echo "/PRO $i\n"; 
+    for ($entry = 0; ; $entry++)
     {
-      if (isset($words[0][$c])) $word = $words[0][$c];
-      else if ((isset($words[2][$c])) && ($c<20)) $word = $words[2][$c];
-      echo "$word ";
-    }
-    $c = fgetb($file);
-    if ($c == 255) echo  "_"; else echo $words[2][$c];
-    $condacts_pos = (fgetb($file) << $SHR1) | (fgetb($file) << $SHR2);
-    echo "\n";
-    fseek ($file, $condacts_pos); // condacts
-    while (($c = fgetb($file)) != 255)
+      fseek ($file, $pos_list_pos_procs + (2 * $i));
+      fseek ($file, (fgetb($file) << $SHR1) | (fgetb($file)) << $SHR2);
+      fseek ($file, $entry*4, SEEK_CUR);
+      $c = fgetb($file);
+      echo "\n";
+      if ($c == 0)  break; // Process end
+      if ($c == 255) echo  str_pad("_", 8); else
       {
+        if (isset($words[0][$c])) $word = $words[0][$c];
+        else if ((isset($words[2][$c])) && ($c<20)) $word = $words[2][$c];
+        echo str_pad("$word", 8);
+      }
+      $c = fgetb($file);
+      echo str_pad($c == 255 ? "_" : $words[2][$c], 8);
+      $condacts_pos = (fgetb($file) << $SHR1) | (fgetb($file) << $SHR2);
+      fseek ($file, $condacts_pos); // condacts
+      $first = true;
+      while (($c = fgetb($file)) != 255)
+      {
+        if (!$first) echo "                ";
+        $first = false;
         $indirection = 0;
         if ($c > 127)
         {
@@ -612,13 +664,15 @@ for ($i = 0; $i < $num_locs; $i++)
           echo ";ERROR: unknown condact code: $c \n";
           break;
         }
-        echo ' ' . $condacts[$c][1] .' ';
+        echo $condacts[$c][1].' ';
         
         for ($j = 0; $j < $condacts[$c][0]; $j++)
         {
           $val = fgetb($file);
-          if (isset($wordParamTypes[$c])) echo $words[$wordParamTypes[$c]][$val];
-          else if (($indirection) && ($j==0)) echo "[$val] "; else echo "$val ";
+          if (isset($wordParamTypes[$c][$j]) && isset($words[$wordParamTypes[$c][$j]][$val])) 
+            echo $words[$wordParamTypes[$c][$j]][$val]." ";
+          else 
+            echo (($indirection) && ($j==0) ? "[$val] " : "$val ");
         }
         echo "\n";
       }
@@ -627,5 +681,3 @@ for ($i = 0; $i < $num_locs; $i++)
   fclose ($file);
   echo  "\n";
   echo ";---------------------------------------------------------------------------\n";
-
-
