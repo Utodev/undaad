@@ -14,8 +14,8 @@
 // 2         1 byte    Always contains 95, not identified
 // 3         1 byte    Number of object descriptions
 // 4         1 byte    Number of location descriptions
-// 5         1 byte    Number of system messages
-// 6         1 byte    Number of user messages
+// 5         1 byte    Number of user messages
+// 6         1 byte    Number of system messages
 // 7         1 byte    Number of processes
 // 8         2 bytes   Compressed text position
 // 10        2 bytes   Process list position
@@ -102,134 +102,134 @@ $wordParamTypes = array(
 
 
 $condacts = array(
-array(1,'AT     '), //   0
-array(1,'NOTAT  '), //   1
-array(1,'ATGT   '), //   2
-array(1,'ATLT   '), //   3
-array(1,'PRESENT'), //   4
-array(1,'ABSENT '), //   5
-array(1,'WORN   '), //   6
-array(1,'NOTWORN'), //   7
-array(1,'CARRIED'), //   8
-array(1,'NOTCARR'), //   9
-array(1,'CHANCE '), //  10
-array(1,'ZERO   '), //  11
-array(1,'NOTZERO'), //  12
-array(2,'EQ     '), //  13
-array(2,'GT     '), //  14
-array(2,'LT     '), //  15
-array(1,'ADJECT1'), //  16
-array(1,'ADVERB '), //  17
-array(2,'SFX    '), //  18
-array(0,'DESC   '), //  19
-array(0,'QUIT   '), //  20
-array(0,'END    '), //  21
-array(0,'DONE   '), //  22
-array(0,'OK     '), //  23
-array(0,'ANYKEY '), //  24
-array(1,'SAVE   '), //  25
-array(1,'LOAD   '), //  26
-array(1,'DPRINT '), //  27 *
-array(1,'DISPLAY'), //  28 *
-array(0,'CLS    '), //  29
-array(0,'DROPALL'), //  30
-array(0,'AUTOG  '), //  31
-array(0,'AUTOD  '), //  32
-array(0,'AUTOW  '), //  33
-array(0,'AUTOR  '), //  34
-array(1,'PAUSE  '), //  35
-array(2,'SYNONYM'), //  36 *
-array(1,'GOTO   '), //  37
-array(1,'MESSAGE'), //  38
-array(1,'REMOVE '), //  39
-array(1,'GET    '), //  40
-array(1,'DROP   '), //  41
-array(1,'WEAR   '), //  42
-array(1,'DESTROY'), //  43
-array(1,'CREATE '), //  44
-array(2,'SWAP   '), //  45
-array(2,'PLACE  '), //  46
-array(1,'SET    '), //  47
-array(1,'CLEAR  '), //  48
-array(2,'PLUS   '), //  49
-array(2,'MINUS  '), //  50
-array(2,'LET    '), //  51
-array(0,'NEWLINE'), //  52
-array(1,'PRINT  '), //  53
-array(1,'SYSMESS'), //  54
-array(2,'ISAT   '), //  55
-array(1,'SETCO  '), //  56 COPYOF in old games
-array(0,'SPACE  '), //  57 COPYOO in old games
-array(1,'HASAT  '), //  58 COPYFO in old games
-array(1,'HASNAT '), //  59 COPYFF in old games
-array(0,'LISTOBJ'), //  60
-array(2,'EXTERN '), //  61
-array(0,'RAMSAVE'), //  62
-array(1,'RAMLOAD'), //  63
-array(2,'BEEP   '), //  64
-array(1,'PAPER  '), //  65
-array(1,'INK    '), //  66
-array(1,'BORDER '), //  67
-array(1,'PREP   '), //  68
-array(1,'NOUN2  '), //  69
-array(1,'ADJECT2'), //  70
-array(2,'ADD    '), //  71
-array(2,'SUB    '), //  72
-array(0,'PARSE  '), //  73
-array(1,'LISTAT '), //  74
-array(1,'PROCESS'), //  75
-array(2,'SAME   '), //  76
-array(1,'MES    '), //  77
-array(1,'WINDOW '), //  78
-array(2,'NOTEQ  '), //  79
-array(2,'NOTSAME'), //  80
-array(1,'MODE   '), //  81
-array(2,'WINAT  '), //  82
-array(2,'TIME   '), //  83
-array(1,'PICTURE'), //  84
-array(1,'DOALL  '), //  85
-array(1,'MOUSE  '), //  86
-array(2,'GFX    '), //  87
-array(2,'ISNOTAT'), //  88
-array(2,'WEIGH  '), //  89
-array(2,'PUTIN  '), //  90
-array(2,'TAKEOUT'), //  91
-array(0,'NEWTEXT'), //  92
-array(2,'ABILITY'), //  93
-array(1,'WEIGHT '), //  94
-array(1,'RANDOM '), //  95
-array(2,'INPUT  '), //  96 
-array(0,'SAVEAT '), //  97
-array(0,'BACKAT '), //  98
-array(2,'PRINTAT'), //  99
-array(0,'WHATO  '), // 100
-array(1,'CALL   '), // 101
-array(1,'PUTO   '), // 102
-array(0,'NOTDONE'), // 103
-array(1,'AUTOP  '), // 104
-array(1,'AUTOT  '), // 105
-array(1,'MOVE   '), // 106
-array(2,'WINSIZE'), // 107
-array(0,'REDO   '), // 108
-array(0,'CENTRE '), // 109
-array(1,'EXIT   '), // 110
-array(0,'INKEY  '), // 111 
-array(2,'BIGGER '), // 112
-array(2,'SMALLER'), // 113 
-array(0,'ISDONE '), // 114
-array(0,'ISNDONE'), // 115 
-array(1,'SKIP   '), // 116 
-array(0,'RESTART'), // 117 
-array(1,'TAB    '), // 118
-array(2,'COPYOF '), // 119
-array(0,'dumb   '), // 120 (according DAAD manual, internal)
-array(2,'COPYOO '), // 121 
-array(0,'dumb   '), // 122 (according DAAD manual, internal)
-array(2,'COPYFO '), // 123
-array(0,'dumb   '), // 124 (according DAAD manual, internal)
-array(2,'COPYFF '), // 125 
-array(2,'COPYBF '), // 126 
-array(0,'RESET  ')  // 127 
+array(1,'AT     '), //   0 00
+array(1,'NOTAT  '), //   1 01
+array(1,'ATGT   '), //   2 02
+array(1,'ATLT   '), //   3 03
+array(1,'PRESENT'), //   4 04
+array(1,'ABSENT '), //   5 05
+array(1,'WORN   '), //   6 06
+array(1,'NOTWORN'), //   7 07
+array(1,'CARRIED'), //   8 08
+array(1,'NOTCARR'), //   9 09
+array(1,'CHANCE '), //  10 0A
+array(1,'ZERO   '), //  11 0B
+array(1,'NOTZERO'), //  12 0C
+array(2,'EQ     '), //  13 0D
+array(2,'GT     '), //  14 0E
+array(2,'LT     '), //  15 0F
+array(1,'ADJECT1'), //  16 10
+array(1,'ADVERB '), //  17 11
+array(2,'SFX    '), //  18 12
+array(1,'DESC   '), //  19 13
+array(0,'QUIT   '), //  20 14
+array(0,'END    '), //  21 15
+array(0,'DONE   '), //  22 16
+array(0,'OK     '), //  23 17
+array(0,'ANYKEY '), //  24 18
+array(1,'SAVE   '), //  25 19
+array(1,'LOAD   '), //  26 1A
+array(1,'DPRINT '), //  27 * 1B
+array(1,'DISPLAY'), //  28 * 1C
+array(0,'CLS    '), //  29 1D
+array(0,'DROPALL'), //  30 1E
+array(0,'AUTOG  '), //  31 1F
+array(0,'AUTOD  '), //  32 20
+array(0,'AUTOW  '), //  33 21
+array(0,'AUTOR  '), //  34 22
+array(1,'PAUSE  '), //  35 23
+array(2,'SYNONYM'), //  36 * 24
+array(1,'GOTO   '), //  37 25
+array(1,'MESSAGE'), //  38 26
+array(1,'REMOVE '), //  39 27
+array(1,'GET    '), //  40 28
+array(1,'DROP   '), //  41 29
+array(1,'WEAR   '), //  42 2A
+array(1,'DESTROY'), //  43 2B
+array(1,'CREATE '), //  44 2C
+array(2,'SWAP   '), //  45 2D
+array(2,'PLACE  '), //  46 2E
+array(1,'SET    '), //  47 2F
+array(1,'CLEAR  '), //  48 30
+array(2,'PLUS   '), //  49 31
+array(2,'MINUS  '), //  50 32
+array(2,'LET    '), //  51 33
+array(0,'NEWLINE'), //  52 34
+array(1,'PRINT  '), //  53 35
+array(1,'SYSMESS'), //  54 36
+array(2,'ISAT   '), //  55 37
+array(1,'SETCO  '), //  56 38 COPYOF in old games 
+array(0,'SPACE  '), //  57 39 COPYOO in old games
+array(1,'HASAT  '), //  58 3A COPYFO in old games
+array(1,'HASNAT '), //  59 3B COPYFF in old games
+array(0,'LISTOBJ'), //  60 3C
+array(2,'EXTERN '), //  61 3D
+array(0,'RAMSAVE'), //  62 3E
+array(1,'RAMLOAD'), //  63 3F
+array(2,'BEEP   '), //  64 40
+array(1,'PAPER  '), //  65 41
+array(1,'INK    '), //  66 42
+array(1,'BORDER '), //  67 43
+array(1,'PREP   '), //  68 44
+array(1,'NOUN2  '), //  69 45
+array(1,'ADJECT2'), //  70 46
+array(2,'ADD    '), //  71 47
+array(2,'SUB    '), //  72 48
+array(0,'PARSE  '), //  73 49
+array(1,'LISTAT '), //  74 4A
+array(1,'PROCESS'), //  75 4B
+array(2,'SAME   '), //  76 4C
+array(1,'MES    '), //  77 4D
+array(1,'WINDOW '), //  78 4E
+array(2,'NOTEQ  '), //  79 4F
+array(2,'NOTSAME'), //  80 50
+array(1,'MODE   '), //  81 51
+array(2,'WINAT  '), //  82 52
+array(2,'TIME   '), //  83 53
+array(1,'PICTURE'), //  84 54
+array(1,'DOALL  '), //  85 55
+array(1,'MOUSE  '), //  86 56
+array(2,'GFX    '), //  87 57
+array(2,'ISNOTAT'), //  88 58
+array(2,'WEIGH  '), //  89 59
+array(2,'PUTIN  '), //  90 5A
+array(2,'TAKEOUT'), //  91 5B
+array(0,'NEWTEXT'), //  92 5C
+array(2,'ABILITY'), //  93 5D
+array(1,'WEIGHT '), //  94 5E
+array(1,'RANDOM '), //  95 5F
+array(2,'INPUT  '), //  96 60
+array(0,'SAVEAT '), //  97 61
+array(0,'BACKAT '), //  98 62
+array(2,'PRINTAT'), //  99 63
+array(0,'WHATO  '), // 100 64
+array(1,'CALL   '), // 101 65
+array(1,'PUTO   '), // 102 66
+array(0,'NOTDONE'), // 103 67
+array(1,'AUTOP  '), // 104 68
+array(1,'AUTOT  '), // 105 69
+array(1,'MOVE   '), // 106 6A
+array(2,'WINSIZE'), // 107 6B
+array(0,'REDO   '), // 108 6C
+array(0,'CENTRE '), // 109 6D
+array(1,'EXIT   '), // 110 6E
+array(0,'INKEY  '), // 111 6F
+array(2,'BIGGER '), // 112 70
+array(2,'SMALLER'), // 113 71
+array(0,'ISDONE '), // 114 72
+array(0,'ISNDONE'), // 115 73
+array(1,'SKIP   '), // 116 74
+array(0,'RESTART'), // 117 75
+array(1,'TAB    '), // 118 76
+array(2,'COPYOF '), // 119 77
+array(0,'dumb   '), // 120 78 (according DAAD manual, internal)
+array(2,'COPYOO '), // 121 79 
+array(0,'dumb   '), // 122 7A (according DAAD manual, internal)
+array(2,'COPYFO '), // 123 7B
+array(0,'dumb   '), // 124 7C (according DAAD manual, internal)
+array(2,'COPYFF '), // 125 7D
+array(2,'COPYBF '), // 126 7E
+array(0,'RESET  ')  // 127 7F
 );
 
 
@@ -423,6 +423,7 @@ if ($pos_tokens)
   while ($tokenCount<128)  // There should be exactly 128 tokens
   {
     $c = fgetb($file);
+    if ($c==0) break;
     if ($c > 127) {
       $token .=  chr($tokens_to_iso8859_15[$c & 127]);
       echo "$token\n";
