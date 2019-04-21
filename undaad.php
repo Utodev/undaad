@@ -1,8 +1,8 @@
 <?php
 
 
-// Original work copyright (C) 2008-2010, 2013 JosÃ© Manuel Ferrer Ortiz
-// Fixes and completion copyright (C) Uto (2015)
+// Original work copyright (C) 2008-2010, 2013 José Manuel Ferrer Ortiz
+// Fixes and completion copyright (C) Uto (2015-2019)
 
 
 
@@ -36,12 +36,12 @@
 
 /*
 
-TIPS:
+TIPS FOR PC DDBs:
 
 ORIGINAL & JABATO header word values are little endian
 COZUMEL, ESPACIAL, TEMPLOS & CHICHEN ITZA big endian
 
-ORIGINAL, JABATO, COZUMEL use an old version hat doesn't support extra object attributes
+ORIGINAL, JABATO, COZUMEL use an old version that doesn't support extra object attributes
 ESPACIAL, TEMPLOS & CHICHEN ITZA support them
 
 New games made after DAAD was found, are supposed to be big endian and support
@@ -59,15 +59,17 @@ function fgetb($handler)
 
 function usageInfo()
 {
- echo "Usage: undaad.php <ddb_file> [options]\n";
- echo "\n";
- echo "Options:\n";
- echo "/h /H : show only header data";
+ echo( "Usage: undaad.php <ddb_file> [options]\n");
+ echo( "\n");
+ echo( "Options:\n");
+ echo( "-h -H : show only header data\n");
+ echo( "-D -d : export to DSF\n");
+ echo( "-v -V : verbose output\n");
 }
 
-function printSeparator()
+function printSeparator($output)
 {
- echo ";------------------------------------------------------------------------------\n";
+ write($output, ";------------------------------------------------------------------------------\n");
 }
 
 //######################################## GLOBAL VARS ##########################################
@@ -80,6 +82,8 @@ $SHR2=8;
 
 // Command line parameter settings
 $headerOnly=false;
+$exportToDSF=false;
+$verboseOutput=false;
 
 
 //Other vars
@@ -91,24 +95,6 @@ $tokens=array();
 $words=array();
 
 
-// Predefined tables
-
-// Supported machines
-$machines = array(
-  0  => 'IBM PC',
-  1  => 'Spectrum',
-  2  => 'Commodore 64',
-  3  => 'Amstrad CPC',
-  4  => 'MSX',
-  5  => 'Atari ST',
-  6  => 'Amiga',
-  7  => 'PCW',
-  8  => 'PC VGA',
-  9  => 'PC EGA',
-  10 => 'PC CGA',
-  11 => 'Spectrum 48K',
-  12 => 'Spectrum Plus 3'
-);
 
 $languages = array(
   0 => "English",
@@ -137,136 +123,198 @@ $specialLocs = array(
 );
 
 $condacts = array(
-array(1,'AT     '), //   0 00
-array(1,'NOTAT  '), //   1 01
-array(1,'ATGT   '), //   2 02
-array(1,'ATLT   '), //   3 03
-array(1,'PRESENT'), //   4 04
-array(1,'ABSENT '), //   5 05
-array(1,'WORN   '), //   6 06
-array(1,'NOTWORN'), //   7 07
-array(1,'CARRIED'), //   8 08
-array(1,'NOTCARR'), //   9 09
-array(1,'CHANCE '), //  10 0A
-array(1,'ZERO   '), //  11 0B
-array(1,'NOTZERO'), //  12 0C
-array(2,'EQ     '), //  13 0D
-array(2,'GT     '), //  14 0E
-array(2,'LT     '), //  15 0F
-array(1,'ADJECT1'), //  16 10
-array(1,'ADVERB '), //  17 11
-array(2,'SFX    '), //  18 12
-array(1,'DESC   '), //  19 13
-array(0,'QUIT   '), //  20 14
-array(0,'END    '), //  21 15
-array(0,'DONE   '), //  22 16
-array(0,'OK     '), //  23 17
-array(0,'ANYKEY '), //  24 18
-array(1,'SAVE   '), //  25 19
-array(1,'LOAD   '), //  26 1A
-array(1,'DPRINT '), //  27 * 1B
-array(1,'DISPLAY'), //  28 * 1C
-array(0,'CLS    '), //  29 1D
-array(0,'DROPALL'), //  30 1E
-array(0,'AUTOG  '), //  31 1F
-array(0,'AUTOD  '), //  32 20
-array(0,'AUTOW  '), //  33 21
-array(0,'AUTOR  '), //  34 22
-array(1,'PAUSE  '), //  35 23
-array(2,'SYNONYM'), //  36 * 24
-array(1,'GOTO   '), //  37 25
-array(1,'MESSAGE'), //  38 26
-array(1,'REMOVE '), //  39 27
-array(1,'GET    '), //  40 28
-array(1,'DROP   '), //  41 29
-array(1,'WEAR   '), //  42 2A
-array(1,'DESTROY'), //  43 2B
-array(1,'CREATE '), //  44 2C
-array(2,'SWAP   '), //  45 2D
-array(2,'PLACE  '), //  46 2E
-array(1,'SET    '), //  47 2F
-array(1,'CLEAR  '), //  48 30
-array(2,'PLUS   '), //  49 31
-array(2,'MINUS  '), //  50 32
-array(2,'LET    '), //  51 33
-array(0,'NEWLINE'), //  52 34
-array(1,'PRINT  '), //  53 35
-array(1,'SYSMESS'), //  54 36
-array(2,'ISAT   '), //  55 37
-array(1,'SETCO  '), //  56 38 COPYOF in old games 
-array(0,'SPACE  '), //  57 39 COPYOO in old games
-array(1,'HASAT  '), //  58 3A COPYFO in old games
-array(1,'HASNAT '), //  59 3B COPYFF in old games
-array(0,'LISTOBJ'), //  60 3C
-array(2,'EXTERN '), //  61 3D
-array(0,'RAMSAVE'), //  62 3E
-array(1,'RAMLOAD'), //  63 3F
-array(2,'BEEP   '), //  64 40
-array(1,'PAPER  '), //  65 41
-array(1,'INK    '), //  66 42
-array(1,'BORDER '), //  67 43
-array(1,'PREP   '), //  68 44
-array(1,'NOUN2  '), //  69 45
-array(1,'ADJECT2'), //  70 46
-array(2,'ADD    '), //  71 47
-array(2,'SUB    '), //  72 48
-array(0,'PARSE  '), //  73 49
-array(1,'LISTAT '), //  74 4A
-array(1,'PROCESS'), //  75 4B
-array(2,'SAME   '), //  76 4C
-array(1,'MES    '), //  77 4D
-array(1,'WINDOW '), //  78 4E
-array(2,'NOTEQ  '), //  79 4F
-array(2,'NOTSAME'), //  80 50
-array(1,'MODE   '), //  81 51
-array(2,'WINAT  '), //  82 52
-array(2,'TIME   '), //  83 53
-array(1,'PICTURE'), //  84 54
-array(1,'DOALL  '), //  85 55
-array(1,'MOUSE  '), //  86 56
-array(2,'GFX    '), //  87 57
-array(2,'ISNOTAT'), //  88 58
-array(2,'WEIGH  '), //  89 59
-array(2,'PUTIN  '), //  90 5A
-array(2,'TAKEOUT'), //  91 5B
-array(0,'NEWTEXT'), //  92 5C
-array(2,'ABILITY'), //  93 5D
-array(1,'WEIGHT '), //  94 5E
-array(1,'RANDOM '), //  95 5F
-array(2,'INPUT  '), //  96 60
-array(0,'SAVEAT '), //  97 61
-array(0,'BACKAT '), //  98 62
-array(2,'PRINTAT'), //  99 63
-array(0,'WHATO  '), // 100 64
-array(1,'CALL   '), // 101 65
-array(1,'PUTO   '), // 102 66
-array(0,'NOTDONE'), // 103 67
-array(1,'AUTOP  '), // 104 68
-array(1,'AUTOT  '), // 105 69
-array(1,'MOVE   '), // 106 6A
-array(2,'WINSIZE'), // 107 6B
-array(0,'REDO   '), // 108 6C
-array(0,'CENTRE '), // 109 6D
-array(1,'EXIT   '), // 110 6E
-array(0,'INKEY  '), // 111 6F
-array(2,'BIGGER '), // 112 70
-array(2,'SMALLER'), // 113 71
-array(0,'ISDONE '), // 114 72
-array(0,'ISNDONE'), // 115 73
-array(1,'SKIP   '), // 116 74
-array(0,'RESTART'), // 117 75
-array(1,'TAB    '), // 118 76
-array(2,'COPYOF '), // 119 77
-array(0,'dumb   '), // 120 78 (according DAAD manual, internal)
-array(2,'COPYOO '), // 121 79 
-array(0,'dumb   '), // 122 7A (according DAAD manual, internal)
-array(2,'COPYFO '), // 123 7B
-array(0,'dumb   '), // 124 7C (according DAAD manual, internal)
-array(2,'COPYFF '), // 125 7D
-array(2,'COPYBF '), // 126 7E
-array(0,'RESET  ')  // 127 7F
+array(1,'AT     '), //   0 $00
+array(1,'NOTAT  '), //   1 $01
+array(1,'ATGT   '), //   2 $$02
+array(1,'ATLT   '), //   3 $03
+array(1,'PRESENT'), //   4 $04
+array(1,'ABSENT '), //   5 $05
+array(1,'WORN   '), //   6 $06
+array(1,'NOTWORN'), //   7 $07
+array(1,'CARRIED'), //   8 $08
+array(1,'NOTCARR'), //   9 $09
+array(1,'CHANCE '), //  10 $0A
+array(1,'ZERO   '), //  11 $0B
+array(1,'NOTZERO'), //  12 $0C
+array(2,'EQ     '), //  13 $0D
+array(2,'GT     '), //  14 $0E
+array(2,'LT     '), //  15 $0F
+array(1,'ADJECT1'), //  16 $10
+array(1,'ADVERB '), //  17 $11
+array(2,'SFX    '), //  18 $12
+array(1,'DESC   '), //  19 $13
+array(0,'QUIT   '), //  20 $14
+array(0,'END    '), //  21 $15
+array(0,'DONE   '), //  22 $16
+array(0,'OK     '), //  23 $17
+array(0,'ANYKEY '), //  24 $18
+array(1,'SAVE   '), //  25 $19
+array(1,'LOAD   '), //  26 $1A
+array(1,'DPRINT '), //  27 * $1B
+array(1,'DISPLAY'), //  28 * $1C
+array(0,'CLS    '), //  29 $1D
+array(0,'DROPALL'), //  30 $1E
+array(0,'AUTOG  '), //  31 $1F
+array(0,'AUTOD  '), //  32 $20
+array(0,'AUTOW  '), //  33 $21
+array(0,'AUTOR  '), //  34 $22
+array(1,'PAUSE  '), //  35 $23
+array(2,'SYNONYM'), //  36 * $24
+array(1,'GOTO   '), //  37 $25
+array(1,'MESSAGE'), //  38 $26
+array(1,'REMOVE '), //  39 $27
+array(1,'GET    '), //  40 $28
+array(1,'DROP   '), //  41 $29
+array(1,'WEAR   '), //  42 $2A
+array(1,'DESTROY'), //  43 $2B
+array(1,'CREATE '), //  44 $2C
+array(2,'SWAP   '), //  45 $2D
+array(2,'PLACE  '), //  46 $2E
+array(1,'SET    '), //  47 $2F
+array(1,'CLEAR  '), //  48 $30
+array(2,'PLUS   '), //  49 $31
+array(2,'MINUS  '), //  50 $32
+array(2,'LET    '), //  51 $33
+array(0,'NEWLINE'), //  52 $34
+array(1,'PRINT  '), //  53 $35
+array(1,'SYSMESS'), //  54 $36
+array(2,'ISAT   '), //  55 $37
+array(1,'SETCO  '), //  56 $38 COPYOF in old games 
+array(0,'SPACE  '), //  57 $39 COPYOO in old games
+array(1,'HASAT  '), //  58 $3A COPYFO in old games
+array(1,'HASNAT '), //  59 $3B COPYFF in old games
+array(0,'LISTOBJ'), //  60 $3C
+array(2,'EXTERN '), //  61 $3D
+array(0,'RAMSAVE'), //  62 $3E
+array(1,'RAMLOAD'), //  63 $3F
+array(2,'BEEP   '), //  64 $40
+array(1,'PAPER  '), //  65 $41
+array(1,'INK    '), //  66 $42
+array(1,'BORDER '), //  67 $43
+array(1,'PREP   '), //  68 $44
+array(1,'NOUN2  '), //  69 $45
+array(1,'ADJECT2'), //  70 $46
+array(2,'ADD    '), //  71 $47
+array(2,'SUB    '), //  72 $48
+array(1,'PARSE  '), //  73 $49
+array(1,'LISTAT '), //  74 $4A
+array(1,'PROCESS'), //  75 $4B
+array(2,'SAME   '), //  76 $4C
+array(1,'MES    '), //  77 $4D
+array(1,'WINDOW '), //  78 $4E
+array(2,'NOTEQ  '), //  79 $4F
+array(2,'NOTSAME'), //  80 $50
+array(1,'MODE   '), //  81 $51
+array(2,'WINAT  '), //  82 $52
+array(2,'TIME   '), //  83 $53
+array(1,'PICTURE'), //  84 $54
+array(1,'DOALL  '), //  85 $55
+array(1,'MOUSE  '), //  86 $56
+array(2,'GFX    '), //  87 $57
+array(2,'ISNOTAT'), //  88 $58
+array(2,'WEIGH  '), //  89 $59
+array(2,'PUTIN  '), //  90 $5A
+array(2,'TAKEOUT'), //  91 $5B
+array(0,'NEWTEXT'), //  92 $5C
+array(2,'ABILITY'), //  93 $5D
+array(1,'WEIGHT '), //  94 $5E
+array(1,'RANDOM '), //  95 $5F
+array(2,'INPUT  '), //  96 $60
+array(0,'SAVEAT '), //  97 $61
+array(0,'BACKAT '), //  98 $62
+array(2,'PRINTAT'), //  99 $63
+array(0,'WHATO  '), // 100 $64
+array(1,'CALL   '), // 101 $65
+array(1,'PUTO   '), // 102 $66
+array(0,'NOTDONE'), // 103 $67
+array(1,'AUTOP  '), // 104 $68
+array(1,'AUTOT  '), // 105 $69
+array(1,'MOVE   '), // 106 $6A
+array(2,'WINSIZE'), // 107 $6B
+array(0,'REDO   '), // 108 $6C
+array(0,'CENTRE '), // 109 $6D
+array(1,'EXIT   '), // 110 $6E
+array(0,'INKEY  '), // 111 $6F
+array(2,'BIGGER '), // 112 $70
+array(2,'SMALLER'), // 113 $71
+array(0,'ISDONE '), // 114 $72
+array(0,'ISNDONE'), // 115 $73
+array(1,'SKIP   '), // 116 $74
+array(0,'RESTART'), // 117 $75
+array(1,'TAB    '), // 118 $76
+array(2,'COPYOF '), // 119 $77
+array(0,'dumb   '), // 120 $78 (according DAAD manual, internal)
+array(2,'COPYOO '), // 121 $79 
+array(0,'dumb   '), // 122 $7A (according DAAD manual, internal)
+array(2,'COPYFO '), // 123 $7B
+array(0,'dumb   '), // 124 $7C (according DAAD manual, internal)
+array(2,'COPYFF '), // 125 $7D
+array(2,'COPYBF '), // 126 $7E
+array(0,'RESET  ')  // 127 $7F
 );
 
+// Global functions
+
+function prettyFormat($value)
+{
+    $value = strtoupper(dechex($value));
+    $value = str_pad($value,4,"0",STR_PAD_LEFT);
+    $value = "0x$value";
+    return $value;
+}
+
+function isLittleEndianPlatform($machineID)
+{
+    $target = getTargetByMachineID($machineID);
+    return (($target=='ST') || ($target=='AMIGA'));
+};
+
+
+function replace_extension($filename, $new_extension) {
+  $info = pathinfo($filename);
+  return ($info['dirname'] ? $info['dirname'] . DIRECTORY_SEPARATOR : '') 
+      . $info['filename'] 
+      . '.' 
+      . $new_extension;
+}
+
+
+function getMSX2Subtarget($nullword)
+{
+  $charWidth = ($nullword & 128) == 0 ? '6x8' : '8x8';
+  $mode = ($nullword & 3) +5;
+  return "Mode $mode, $charWidth characters.";
+}
+
+function write($handle, $text)
+{
+  fputs($handle, $text);
+}
+
+
+function getBaseAddressByTarget($target)
+{
+  if ($target=='ZX') return 0x8400; else
+  if ($target=='MSX') return 0x100; else
+  if ($target=='CPC') return 0x2880; else
+  if ($target=='C64') return 0x3880;
+
+  return 0;
+};
+
+
+function getTargetByMachineID($id)
+{
+  if ($id==0) return 'PC'; else
+  if ($id==1) return 'ZX'; else
+  if ($id==2) return 'C64'; else
+  if ($id==3) return 'CPC'; else
+  if ($id==4) return 'MSX'; else
+  if ($id==5) return 'ST'; else
+  if ($id==6) return 'AMIGA'; else
+  if ($id==7) return 'PCW'; else
+  if ($id==0x0F) return 'MSX2';
+};  
 
 
 //####################################### LOOKUP TABLES #########################################
@@ -318,6 +366,9 @@ $daad_to_iso8859_15 = array(
   );
 
 
+
+
+
 //####################################### MAIN PROGRAM #########################################
 
 // Check params
@@ -326,22 +377,27 @@ if (sizeof($argv) < 2) {
   exit (1); 
 }
 
+
 if (sizeof($argv)>=3)
 {
   for ($i=2;$i<sizeof($argv);$i++)
   {
     switch($argv[$i])
     {
-      case '/h':
-      case '/H': $headerOnly = true; break;
-      default: echo "Invalid parameter: $argv[$i] \n"; usageInfo(); exit(1);
+      case '-h':
+      case '-H': $headerOnly = true; break;
+      case '-d':
+      case '-D': $exportToDSF = true; break;
+      case '-v':
+      case '-V': $verboseOutput = true; break;
+      default: echo ("Invalid parameter: $argv[$i] \n"); usageInfo(); exit(1);
     }
   }
 }
 
 if (!file_exists($argv[1]))
 {
-  echo "File not found.\n";
+  echo ("File not found.\n");
   usageInfo();
   exit (1); 
 }
@@ -349,37 +405,60 @@ if (!file_exists($argv[1]))
 
 // Open input file
 $file = fopen($argv[1],'r');
-
-
-// Determine if it's a little endian old game or big endian game
-fseek($file, 32);
-$file_length = (fgetb($file) << $SHR1) | (fgetb($file) << $SHR2 );
-if ($file_length!=filesize($argv[1])) // Not matching, check offset 30
+if($exportToDSF) $outputFileName = replace_extension($argv[1],'DSF'); else $outputFileName = replace_extension($argv[1],'SCE');
+if ($outputFileName == $argv[1]) 
 {
-  fseek($file, 32);
-  $file_length = (fgetb($file) << $SHR1) | (fgetb($file) << $SHR2 );
-  if ($file_length!=filesize($argv[1])) // Not matching, it's little endian
-  {
-    $SHR1=8;
-    $SHR2=0;
-    $isLittleEndian = true;
-   }
+  echo ("Input and output file cannot be the same one.");
+  exit(1);
 }
+$output =  fopen($outputFileName, 'wr');
 
-
-// Read header data
 fseek($file, 0);
 $daad_version = fgetb($file);
 $daad_machine = fgetb($file);
 $daad_language = $daad_machine & 0x0F;
 $daad_machine = ($daad_machine >> 4) & 0x0F;
-$signature = fgetb($file);
+
+
+if  (intval($daad_version)>=2)
+{
+  $isLittleEndian = isLittleEndianPlatform($daad_machine);
+  if ($isLittleEndian)
+  {
+    $SHR1=8;
+    $SHR2=0;
+  }
+}
+else
+{
+  // Determine if it's a little endian old game or big endian game based on if it has or not extra attr.
+
+  fseek($file, 32);
+  $file_length = (fgetb($file) << $SHR1) | (fgetb($file) << $SHR2 );
+  if ($file_length!=filesize($argv[1])) // Not matching, check offset 30
+  {
+    fseek($file, 30);
+    $file_length = (fgetb($file) << $SHR1) | (fgetb($file) << $SHR2 );
+    if ($file_length!=filesize($argv[1])) // Not matching, it's little endian
+    {
+      $SHR1=8;
+      $SHR2=0;
+      $isLittleEndian = true;
+    }
+  }
+}
+
+// Read header data
+fseek($file, 2);
+$nullword    = fgetb($file);
 $num_objs     = fgetb($file);
 $num_locs     = fgetb($file);
 $num_msgs_usr = fgetb($file);
 $num_msgs_sys = fgetb($file);
 $num_procs    = fgetb($file);
 
+$target = getTargetByMachineID($daad_machine);
+$baseAddress = getBaseAddressByTarget($target);
 
 
 $pos_tokens   = (fgetb($file) << $SHR1) | (fgetb($file) << $SHR2 );
@@ -412,52 +491,81 @@ else
 }
 
 
-if ($file_length!=filesize($argv[1]))
+$file_length-=$baseAddress;
+$filesize = filesize($argv[1]);
+if ($file_length!=$filesize)
 {
-  echo "Invalid DAAD header!";
-  exit;
+  echo ("Invalid DAAD header, length ($file_length) doesn't match file size ($filesize)!");
 }
 
 
 // DUMP GLOBALS
-echo ";---------------------------------------------------------------------------\n";
-echo ";---------------------   An UnDAADed game o'hacker   -----------------------\n";
-echo ";---------------------------------------------------------------------------\n";
-echo "; Version   : $daad_version\n";
-echo "; Machine   : ".$machines[$daad_machine]." ($daad_machine)\n";
-echo "; Language  : ".$languages[$daad_language]." ($daad_language)\n";
-echo "; Signature : ".strtoupper(str_pad(dechex($signature),2,'0',STR_PAD_LEFT))."h\n";  
-echo "; Data      : " . ($isLittleEndian ? "Little-endian" : "Big-endian") . "\n";
-echo "; Objects   : $num_objs\n";
-echo "; Locations : $num_locs\n";
-echo "; Usr Mess  : $num_msgs_usr\n";
-echo "; Sys Mess  : $num_msgs_sys\n";
-echo "; Processes : $num_procs\n";
-echo ";---------------------------------------------------------------------------\n;\n;\n";
-echo "; Tokens addr    : ".strtoupper(str_pad(dechex($pos_tokens),4,'0',STR_PAD_LEFT))."h\n";  
-echo "; Procs addr     : ".strtoupper(str_pad(dechex($pos_list_pos_procs),4,'0',STR_PAD_LEFT))."h\n";  
-echo "; Objs addr      : ".strtoupper(str_pad(dechex($pos_list_pos_objs),4,'0',STR_PAD_LEFT))."h\n";  
-echo "; Locs addr      : ".strtoupper(str_pad(dechex($pos_list_pos_locs),4,'0',STR_PAD_LEFT))."h\n";  
-echo "; UsrMsg addr    : ".strtoupper(str_pad(dechex($pos_list_pos_msgs_usr),4,'0',STR_PAD_LEFT))."h\n";  
-echo "; SysMsg addr    : ".strtoupper(str_pad(dechex($pos_list_pos_msgs_sys),4,'0',STR_PAD_LEFT))."h\n";  
-echo "; Connex addr    : ".strtoupper(str_pad(dechex($pos_list_pos_cnxs),4,'0',STR_PAD_LEFT))."h\n";  
-echo "; Vocabu addr    : ".strtoupper(str_pad(dechex($pos_vocabulary),4,'0',STR_PAD_LEFT))."h\n";  
-echo "; InitAt addr    : ".strtoupper(str_pad(dechex($pos_locs_objs),4,'0',STR_PAD_LEFT))."h\n";  
-echo "; ObjName addr   : ".strtoupper(str_pad(dechex($pos_noms_objs),4,'0',STR_PAD_LEFT))."h\n";  
-echo "; Weight/CW addr : ".strtoupper(str_pad(dechex($pos_attr_objs),4,'0',STR_PAD_LEFT))."h\n";  
-if (!$isOldGame) echo "; Extra attr addr: ".strtoupper(str_pad(dechex($pos_extattr_objs),4,'0',STR_PAD_LEFT))."h\n";  
-echo "; File legth     : ".strtoupper(str_pad(dechex($file_length),4,'0',STR_PAD_LEFT))."h ($file_length)\n";  
-echo ";---------------------------------------------------------------------------\n;\n;\n";
+write($output, ";---------------------------------------------------------------------------\n");
+write($output, ";---------------------   An UnDAADed game o'hacker   -----------------------\n");
+write($output, ";---------------------------------------------------------------------------\n");
+write($output, "; DAAD Vers. : $daad_version\n");
+write($output, "; Target     : $target ($daad_machine)\n");
+write($output, "; Language   : ".$languages[$daad_language]." ($daad_language)\n");
+write($output, "; BaseAddr   : ".prettyFormat($baseAddress)."\n");
+write($output, "; Endianness : " . ($isLittleEndian ? "Little-endian" : "Big-endian") . "\n");
+if ($target=='MSX2') 
+write($output, "; MSX2 Mode  : ". getMSX2Subtarget($nullword)."\n"); else
+write($output, "; Null Word  : ".chr($nullword)."\n");  
+write($output, ";---------------------------------------------------------------------------\n");
+write($output, "; Number of objects         : $num_objs\n");
+write($output, "; Number of Locations       : $num_locs\n");
+write($output, "; Number of User Messages   : $num_msgs_usr\n");
+write($output, "; Number of System Messages : $num_msgs_sys\n");
+write($output, "; Number of Processes       : $num_procs\n");
+write($output, ";---------------------------------------------------------------------------\n");
+write($output, ";                   Memory   File \n");
+write($output, "; Pointer            Addr   Offset\n");
+write($output, "; =======           ======  ======\n");
+write($output, "; Tokens addr     : ".prettyFormat($pos_tokens)."  ".prettyFormat($pos_tokens!=0 ? $pos_tokens- $baseAddress: 0)."\n");  
+write($output, "; Procs addr      : ".prettyFormat($pos_list_pos_procs)."  ".prettyFormat($pos_list_pos_procs-$baseAddress)."\n");  
+write($output, "; Objs addr       : ".prettyFormat($pos_list_pos_objs)."  ".prettyFormat($pos_list_pos_objs-$baseAddress)."\n");  
+write($output, "; Locs addr       : ".prettyFormat($pos_list_pos_locs)."  ".prettyFormat($pos_list_pos_locs-$baseAddress)."\n");  
+write($output, "; UsrMsg addr     : ".prettyFormat($pos_list_pos_msgs_usr)."  ".prettyFormat($pos_list_pos_msgs_usr-$baseAddress)."\n");  
+write($output, "; SysMsg addr     : ".prettyFormat($pos_list_pos_msgs_sys)."  ".prettyFormat($pos_list_pos_msgs_sys-$baseAddress)."\n");  
+write($output, "; Connex addr     : ".prettyFormat($pos_list_pos_cnxs)."  ".prettyFormat($pos_list_pos_cnxs-$baseAddress)."\n");  
+write($output, "; Vocabu addr     : ".prettyFormat($pos_vocabulary)."  ".prettyFormat($pos_vocabulary-$baseAddress)."\n");  
+write($output, "; InitAt addr     : ".prettyFormat($pos_locs_objs)."  ".prettyFormat($pos_locs_objs-$baseAddress)."\n");  
+write($output, "; ObjName addr    : ".prettyFormat($pos_noms_objs)."  ".prettyFormat($pos_noms_objs-$baseAddress)."\n");  
+write($output, "; Weight/CW addr  : ".prettyFormat($pos_attr_objs)."  ".prettyFormat($pos_attr_objs-$baseAddress)."\n");  
+if (!$isOldGame) 
+write($output, "; Extra attr addr : ".prettyFormat($pos_extattr_objs)."  ".prettyFormat($pos_extattr_objs-$baseAddress)."\n");  
+write($output, ";---------------------------------------------------------------------------\n");
+write($output, "; File length    : ".prettyFormat($file_length)." ($file_length bytes)\n");  
+write($output, ";---------------------------------------------------------------------------\n;\n;\n");
+if ($headerOnly) 
+{
+  fclose($file);
+  fclose($output);
+  exit(0);
+}
 
-if ($headerOnly) exit(0);
+
+if ($pos_tokens) $pos_tokens -= $baseAddress; // Only subsstract baseAddress if not zero, if zero it means there are no tokens (DDB has no compression at all)
+$pos_list_pos_procs -= $baseAddress;
+$pos_list_pos_objs -= $baseAddress;
+$pos_list_pos_locs -= $baseAddress;
+$pos_list_pos_msgs_usr -= $baseAddress;
+$pos_list_pos_msgs_sys -= $baseAddress;
+$pos_list_pos_cnxs -= $baseAddress;
+$pos_vocabulary -= $baseAddress;
+$pos_locs_objs -= $baseAddress;
+$pos_noms_objs -= $baseAddress;
+$pos_attr_objs -= $baseAddress;
+$pos_extattr_objs -= $baseAddress;
 
 // CONTROL
-echo "/CTL\n_\n";
+write($output, "/CTL\n_\n");
 
-if ($pos_tokens)
+if ($pos_tokens) // If no compression, $pos_tokens must be 0x0000
 {
   // TOKENS
-  echo "/TOK\n";
+  if ($exportToDSF) write($output, ';');
+  write($output, "/TOK\n");
   fseek ($file, $pos_tokens + 1);  // It seems actual token table starts one byte after the one the header points to
   $tokenCount = 0;
   $token = '';
@@ -467,7 +575,8 @@ if ($pos_tokens)
     if ($c==0) break;
     if ($c > 127) {
       $token .=  chr($tokens_to_iso8859_15[$c & 127]);
-      echo "$token\n";
+      if ($exportToDSF) write($output, ';');
+      write($output, "$token\n");
       $tokens[$tokenCount] = str_replace('_', ' ',  $token);
       $tokenCount++;
       $token = '';
@@ -475,184 +584,304 @@ if ($pos_tokens)
   }
 }
 
-
 //VOCABULARY
-printSeparator();
-echo "/VOC    ;Vocabulary\n";
+printSeparator($output);
+write($output, "/VOC    ;Vocabulary\n");
 fseek ($file, $pos_vocabulary);
 while (1)
 {
   $c = fgetb($file);
   if (!$c) break;  // End of vocabulary list  
-  $currentWord = chr($daad_to_iso8859_15[$c]);
-  for ($i=0;$i<4;$i++) $currentWord .= chr($daad_to_iso8859_15[fgetb($file)]);
+  $currentWord = chr($c); $currentCodes = dechex($c) ." ";
+  $c = $daad_to_iso8859_15[$c];
+  $currentWord = chr($c); $currentCodes .= "($c) ";
+  for ($i=0;$i<4;$i++) 
+  { 
+    $c= fgetb($file);
+    $currentCodes .=dechex($c). " ";
+    $c = $daad_to_iso8859_15[$c];
+    $currentWord .= chr($c); 
+    $currentCodes.= "($c) ";
+  }
   $id  = fgetb($file);
+  $currentCodes .= "(ID: $id ";
   $wordType = fgetb($file);
+  $currentCodes .= "type: $wordType) ";
   $wordTypeText = $wordTypes[$wordType];
-  echo str_pad($currentWord, 8).str_pad($id, 8).$wordTypeText."\n";
+  if (!$verboseOutput) $currentCodes = ''; else $currentCodes = "; - $currentCodes -";
+  write($output,str_pad($currentWord, 8).str_pad($id, 8).$wordTypeText."$currentCodes\n");
   if (!isset($words[$wordType])) $words[$wordType] = array();
   $words[$wordType][$id]=$currentWord;
+
 }
 for ($i=0;$i<7;$i++) $words[$i][255] = '_';
 
 // SYSTEM MESSAGES
-printSeparator();
-echo "/STX    ;System messages\n";
+printSeparator($output);
+write($output, "/STX    ;System Messages Texts\n");
 for ($i = 0; $i < $num_msgs_sys; $i++)
-{
-  echo "/$i\n";
-  fseek ($file, $pos_list_pos_msgs_sys + (2 * $i));
-  $current_message_position = (fgetb($file) << $SHR1) | (fgetb($file)<< $SHR2);
-  fseek ($file, $current_message_position);
-  do
   {
-    $c = $daad_to_iso8859_15[fgetb($file)];
-    echo chr($c);
-  } while ($c != 10);     
-}
-
-// USER MESSAGES
-printSeparator();
-echo "/MTX    ;Messages\n";
-for ($i = 0; $i < $num_msgs_usr; $i++)
-{
-  echo "/$i\n";
-  fseek ($file, $pos_list_pos_msgs_usr + (2 * $i));
-  $current_message_position = (fgetb($file) << $SHR1) | (fgetb($file) << $SHR2);
-  fseek ($file, $current_message_position);
-  do
-  {
-    $c = $daad_to_iso8859_15[fgetb($file)];
-    echo chr($c);
-  } while ($c != 10);     
-}
-
-// OBJECT DESCRIPTIONS
-printSeparator();
-echo "/OTX    ;Object Texts\n";
-for ($i = 0; $i < $num_objs; $i++)
-{
-  echo "/$i\n";
-  fseek ($file, $pos_list_pos_objs + (2 * $i));
-  $current_message_position = (fgetb($file) << $SHR1) | (fgetb($file) << $SHR2);
-  fseek ($file, $current_message_position);
-  do
-  {
-    $c = $daad_to_iso8859_15[fgetb($file)];
-    echo chr($c);
-  } while ($c != 10);     
-}
-
-// LOCATIONS (may be compressed)
-echo "/LTX    ;Location Texts\n";
-for ($i = 0; $i < $num_locs; $i++)
-  {
-    echo "/$i\n";
-    fseek ($file, $pos_list_pos_locs + (2 * $i));
+    $message='';
+    write($output, "/$i "); 
+    if(!$exportToDSF) write($output,"\n");else write($output,"\"");
+    fseek ($file, $pos_list_pos_msgs_sys + (2 * $i));
     $current_message_position = (fgetb($file) << $SHR1) | (fgetb($file) << $SHR2);
-    fseek ($file, $current_message_position);
+    fseek ($file, $current_message_position - $baseAddress);
     do
     {
       $c = fgetb($file);
-      if (!$pos_tokens) echo chr($daad_to_iso8859_15[$c]);
+      if (!$pos_tokens) 
+        {
+          $d= $daad_to_iso8859_15[$c];
+          if ($d != 10) $message.=chr($d); else  if (($d == 10) && (!$exportToDSF)) $message.=chr($d);
+        }
       else  
         {
           if ($c < 127) 
             {
               $token_id = $daad_to_iso8859_15[$c] - 128;
-              echo $tokens[$token_id];
-            } else echo chr($daad_to_iso8859_15[$c]);
+              $thetoken = $tokens[$token_id];
+              $message.=$thetoken;
+              $tid = $token_id + 128;
+            } else 
+            {
+              $d = $daad_to_iso8859_15[$c];
+              if ($d != 10) $message.=chr($d); else  if (($d == 10) && (!$exportToDSF)) $message.=chr($d);
+            }
         }
     } while ($c != 0xF5);  // 0x0A xor 255
+    $message = str_replace(chr(13), '\n', $message);
+    $message = str_replace('"', '\"', $message);
+    write ($output, $message);
+    if($exportToDSF) write($output, "\"\n");
+  }
+
+
+
+// USER MESSAGES
+printSeparator($output);
+write($output, "/MTX    ;Location Texts\n");
+for ($i = 0; $i < $num_msgs_usr; $i++)
+  {
+    $message='';
+    write($output, "/$i "); 
+    if(!$exportToDSF) write($output,"\n");else write($output,"\"");
+    fseek ($file, $pos_list_pos_msgs_usr + (2 * $i));
+    $current_message_position = (fgetb($file) << $SHR1) | (fgetb($file) << $SHR2);
+    fseek ($file, $current_message_position - $baseAddress);
+    do
+    {
+      $c = fgetb($file);
+      if (!$pos_tokens) 
+        {
+          $d= $daad_to_iso8859_15[$c];
+          if ($d != 10) $message.=chr($d); else  if (($d == 10) && (!$exportToDSF)) $message.=chr($d);
+        }
+      else  
+        {
+          if ($c < 127) 
+            {
+              $token_id = $daad_to_iso8859_15[$c] - 128;
+              $thetoken = $tokens[$token_id];
+              $message.=$thetoken;
+              $tid = $token_id + 128;
+            } else 
+            {
+              $d = $daad_to_iso8859_15[$c];
+              if ($d != 10) $message.=chr($d); else  if (($d == 10) && (!$exportToDSF)) $message.=chr($d);
+            }
+        }
+    } while ($c != 0xF5);  // 0x0A xor 255
+    $message = str_replace(chr(13), '\n', $message);
+    $message = str_replace('"', '\"', $message);
+    write ($output, $message);
+    if($exportToDSF) write($output, "\"\n");
+  }
+
+
+// OBJECT DESCRIPTIONS
+printSeparator($output);
+write($output, "/OTX    ;Object Texts\n");
+for ($i = 0; $i < $num_objs; $i++)
+  {
+    $message='';
+    write($output, "/$i "); 
+    if(!$exportToDSF) write($output,"\n");else write($output,"\"");
+    fseek ($file, $pos_list_pos_objs + (2 * $i));
+    $current_message_position = (fgetb($file) << $SHR1) | (fgetb($file) << $SHR2);
+    fseek ($file, $current_message_position - $baseAddress);
+    do
+    {
+      $c = fgetb($file);
+      if (!$pos_tokens) 
+        {
+          $d= $daad_to_iso8859_15[$c];
+          if ($d != 10) $message.=chr($d); else  if (($d == 10) && (!$exportToDSF)) $message.=chr($d);
+        }
+      else  
+        {
+          if ($c < 127) 
+            {
+              $token_id = $daad_to_iso8859_15[$c] - 128;
+              $thetoken = $tokens[$token_id];
+              $message.=$thetoken;
+              $tid = $token_id + 128;
+            } else 
+            {
+              $d = $daad_to_iso8859_15[$c];
+              if ($d != 10) $message.=chr($d); else  if (($d == 10) && (!$exportToDSF)) $message.=chr($d);
+            }
+        }
+    } while ($c != 0xF5);  // 0x0A xor 255
+    $message = str_replace(chr(13), '\n', $message);
+    $message = str_replace('"', '\"', $message);
+    write ($output, $message);
+    if($exportToDSF) write($output, "\"\n");
+  }
+
+
+
+
+// LOCATIONS (may be compressed)
+printSeparator($output);
+write($output, "/LTX    ;Location Texts\n");
+for ($i = 0; $i < $num_locs; $i++)
+  {
+    $message='';
+    write($output, "/$i "); 
+    if(!$exportToDSF) write($output,"\n");else write($output,"\"");
+    fseek ($file, $pos_list_pos_locs + (2 * $i));
+    $current_message_position = (fgetb($file) << $SHR1) | (fgetb($file) << $SHR2);
+    fseek ($file, $current_message_position - $baseAddress);
+    do
+    {
+      $c = fgetb($file);
+      if (!$pos_tokens) 
+        {
+          $d= $daad_to_iso8859_15[$c];
+          if ($d != 10) $message.=chr($d); else  if (($d == 10) && (!$exportToDSF)) $message.=chr($d);
+        }
+      else  
+        {
+          if ($c < 127) 
+            {
+              $token_id = $daad_to_iso8859_15[$c] - 128;
+              $thetoken = $tokens[$token_id];
+              $message.=$thetoken;
+              $tid = $token_id + 128;
+            } else 
+            {
+              $d = $daad_to_iso8859_15[$c];
+              if ($d != 10) $message.=chr($d); else  if (($d == 10) && (!$exportToDSF)) $message.=chr($d);
+            }
+        }
+    } while ($c != 0xF5);  // 0x0A xor 255
+    $message = str_replace(chr(13), '\n', $message);
+    $message = str_replace('"', '\"', $message);
+    write ($output, $message);
+    if($exportToDSF) write($output, "\"\n");
   }
 
 
   // CONNECTIONS
-  printSeparator();
-  echo "/CON    ;Conections\n";
+  printSeparator($output);
+  write($output, "/CON    ;Conections\n");
   for ($i = 0; $i < $num_locs; $i++)
   {
-    echo "/$i\n";
+    write($output, "/$i\n");
     fseek ($file, $pos_list_pos_cnxs + (2 * $i));
     $current_message_position = (fgetb($file) << $SHR1) | (fgetb($file)<<$SHR2);
-    fseek ($file, $current_message_position);
+    fseek ($file, $current_message_position - $baseAddress);
     while (($c = fgetb($file)) != 255)
     {
       if (isset($words[0][$c])) $word = $words[0][$c];
       else if ((isset($words[2][$c])) && ($c<20)) $word = $words[2][$c];
-      echo "$word " . fgetb($file) . "\n";
+      write($output, "$word " . fgetb($file) . "\n");
     } 
   }
 
   // OBJECT DATA
-  printSeparator();
-  echo "/OBJ    ;Objects data\n";
-  echo ";obj.no  starts.at   weight    c w  5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0    noun    adjective\n";
+  printSeparator($output);
+  write($output, "/OBJ    ;Objects data\n");
+  write($output, ";obj.no  starts.at   weight    c w  5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0    noun    adjective\n");
   for ($i = 0; $i < $num_objs; $i++)
   {
     fseek ($file, $pos_locs_objs + $i);
-    echo str_pad("/$i ", 10);
+    write($output,str_pad("/$i ", 10));
     // initially at
     $loc = fgetb($file);
-    echo str_pad(isset($specialLocs[$loc]) ? $specialLocs[$loc] : $loc, 13);
+    $byteCode ="Loc: $loc ";
+    write($output,str_pad(isset($specialLocs[$loc]) ? $specialLocs[$loc] : $loc, 13));
     // Object attributes
     fseek ($file, $pos_attr_objs + $i );
     $attr = fgetb($file);  //weight
-    $weigth = $attr[0] & 0x3F;
-    echo str_pad($weigth, 8);
+    $byteCode .= "Attr/Weight: $attr ";
+    $weigth = $attr & 0x3F;
+    write($output,str_pad($weigth, 8));
     $container = ($attr & 0x40) ? 'Y' : '_';
-    echo "$container ";
+    write($output, "$container ");
     $worn = ($attr & 0x80) ? 'Y' : '_';
-    echo "$worn  ";
+    write($output, "$worn  ");
 
     if (!$isOldGame)
     {
       fseek ($file, $pos_extattr_objs + ($i * 2) );
       $attrs = ((fgetb($file)<<$SHR1)) | ((fgetb($file)<<$SHR2));
+      $byteCode .= "XAttr: $attrs ";
       for ($j=15;$j>=0;$j--)
-         echo ($attrs& (1<<$j)) ? 'Y ':'_ ';
-      echo "   ";
+         write($output,($attrs& (1<<$j)) ? 'Y ':'_ ');
+      write($output, "   ");
     }
-    else echo "_ _  _ _ _ _ _ _ _ _ _ _ _ _ _ _    ";
+    else write($output, "_ _  _ _ _ _ _ _ _ _ _ _ _ _ _ _    ");
 
     // Object noun + adjective
     fseek ($file, $pos_noms_objs + ($i *2));
     $noun_id = fgetb($file);
     $adject_id = fgetb($file);
-    echo str_pad($words[2][$noun_id], 7);
-    echo ' ';
-    if ($adject_id == 255) echo "_"; else echo $words[3][$adject_id];
-    echo " \n";
+    $byteCode .= "Noun: $noun_id Adject: $adject_id ";
+    write($output,str_pad($words[2][$noun_id], 7));
+    write($output,' ');
+    if ($adject_id == 255) write($output, "_"); else write($output,$words[3][$adject_id]);
+    if ($verboseOutput) write($output, " ; $byteCode");
+    write($output, " \n");
   }
+
+  $terminatorOpcodes = array(22, 23,103, 116,117,108);  //DONE/OK/NOTDONE/SKIP/RESTART/REDO
 
   // PROCESSES
   for ($i=0;$i<$num_procs;$i++)
   {
-    printSeparator();
-    echo "/PRO $i\n"; 
+    printSeparator($output);
+    write($output, "/PRO $i\n"); 
     for ($entry = 0; ; $entry++)
     {
-      fseek ($file, $pos_list_pos_procs + (2 * $i));
-      fseek ($file, (fgetb($file) << $SHR1) | (fgetb($file)) << $SHR2);
+      $entryOffsetPosition = $pos_list_pos_procs + (2 * $i);
+      fseek ($file, $entryOffsetPosition);
+      $condactsOffset = ((fgetb($file) << $SHR1) | (fgetb($file)) << $SHR2) - $baseAddress;
+      fseek ($file, $condactsOffset);
       fseek ($file, $entry*4, SEEK_CUR);
+      $condactsOffset+=$entry*4;
       $c = fgetb($file);
-      echo "\n";
+      write($output, "\n");
       if ($c == 0)  break; // Process end
-      if ($c == 255) echo  str_pad("_", 8); else
+      if ($c == 255) write($output,str_pad("_", 8)); else
       {
         if (isset($words[0][$c])) $word = $words[0][$c];
         else if ((isset($words[2][$c])) && ($c<20)) $word = $words[2][$c];
-        echo str_pad("$word", 8);
+        write($output,str_pad("$word", 8));
       }
+      $verbCode = $c;
       $c = fgetb($file);
-      echo str_pad($c == 255 ? "_" : $words[2][$c], 8);
+      $nounCode = $c;
+      write($output,str_pad($c == 255 ? "_" : $words[2][$c], 8));
       $condacts_pos = (fgetb($file) << $SHR1) | (fgetb($file) << $SHR2);
-      fseek ($file, $condacts_pos); // condacts
+      fseek ($file, $condacts_pos - $baseAddress); // condacts
       $first = true;
-      while (($c = fgetb($file)) != 255)
+      $c = fgetb($file);
+      while ($c != 255)
       {
-        if (!$first) echo "                ";
-        $first = false;
+        $byteCode = "$c ";
+        if (!$first) write($output, "                ");
         $indirection = 0;
         if ($c > 127)
         {
@@ -661,23 +890,40 @@ for ($i = 0; $i < $num_locs; $i++)
         }
         if ($c >= sizeof($condacts))
         {
-          echo ";ERROR: unknown condact code: $c \n";
+          write($output, ";ERROR: unknown condact code: $c \n");
           break;
         }
-        echo $condacts[$c][1].' ';
-        
-        for ($j = 0; $j < $condacts[$c][0]; $j++)
+        $opcode = $c;
+        write($output,'        '.$condacts[$opcode][1].' ');
+        for ($j = 0; $j < $condacts[$opcode][0]; $j++)
         {
           $val = fgetb($file);
-          if (isset($wordParamTypes[$c][$j]) && isset($words[$wordParamTypes[$c][$j]][$val])) 
-            echo $words[$wordParamTypes[$c][$j]][$val]." ";
+          $byteCode .= "$val ";
+          if (isset($wordParamTypes[$opcode][$j]) && isset($words[$wordParamTypes[$opcode][$j]][$val])) 
+            write($output,$words[$wordParamTypes[$opcode][$j]][$val]." ");
           else 
-            echo (($indirection) && ($j==0) ? "[$val] " : "$val ");
+          {
+            if ($exportToDSF) write($output,(($indirection) && ($j==0) ? "@$val " : "$val "));
+            else write($output,(($indirection) && ($j==0) ? "[$val] " : "$val "));
+            
+          }
         }
-        echo "\n";
+        if ($verboseOutput) write($output, "\t\t\t; $byteCode ");
+        if (($verboseOutput) && ($first)) write($output, "\t; (Verb: $verbCode - Noun: $nounCode)");
+        write($output, "\n");
+        $first = false;
+        $c = fgetb($file);
+        if (in_array($opcode, $terminatorOpcodes) && ($c!=255)) // If compiled with DRC, there is a chance there is no terminator after one of this codes
+        {
+          fseek($file, -1, SEEK_CUR);  // Create fake $ff and rewind file one byte
+          $c = 255;
+        }
+        
       }
     }
   }  
+  write($output,"\n");
+  write($output, ";---------------------------------------------------------------------------\n");
+  if ($exportToDSF) write($output, "/END\n");
   fclose ($file);
-  echo  "\n";
-  echo ";---------------------------------------------------------------------------\n";
+  fclose($output);
