@@ -64,6 +64,7 @@ function usageInfo()
  echo( "Options:\n");
  echo( "-h -H : show only header data\n");
  echo( "-D -d : export to DSF\n");
+ echo( "-o n -O n : read the DDB file from offset n\n");
  echo( "-v -V : verbose output\n");
 }
 
@@ -377,6 +378,9 @@ if (sizeof($argv) < 2) {
   exit (1); 
 }
 
+// By default, undaad will read the DDB file from offset 0, but that can be changed so you can, for instace, read from offset 2 in C64 DDB files which have the C64 header, or 
+// directly from snapshots if you know where the DDB area is located
+$fileOffset = 0;
 
 if (sizeof($argv)>=3)
 {
@@ -386,11 +390,20 @@ if (sizeof($argv)>=3)
     {
       case '-h':
       case '-H': $headerOnly = true; break;
+      case '-o':
+      case '-O': {
+                    if ($i==(sizeof($argv)-1)) {echo ("Invalid parameter: $argv[$i] \n"); usageInfo(); exit(1);}
+                    $fileOffset = $argv[$i+1];
+                    $fileOffset = intval($fileOffset);
+                    if ($fileOffset<1) {echo ("Invalid parameter: ". $argv[$i]." ".$argv[$i+1]." \n"); usageInfo(); exit(1);}
+                    $i++;
+                    break;
+                  }
       case '-d':
       case '-D': $exportToDSF = true; break;
       case '-v':
       case '-V': $verboseOutput = true; break;
-      default: echo ("Invalid parameter: $argv[$i] \n"); usageInfo(); exit(1);
+      default: {echo ("Invalid parameter: $argv[$i] \n"); usageInfo(); exit(1);}
     }
   }
 }
@@ -405,6 +418,7 @@ if (!file_exists($argv[1]))
 
 // Open input file
 $file = fopen($argv[1],'r');
+fseek($file, $fileOffset);
 if($exportToDSF) $outputFileName = replace_extension($argv[1],'DSF'); else $outputFileName = replace_extension($argv[1],'SCE');
 if ($outputFileName == $argv[1]) 
 {
@@ -413,7 +427,7 @@ if ($outputFileName == $argv[1])
 }
 $output =  fopen($outputFileName, 'wr');
 
-fseek($file, 0);
+fseek($file, 0 + $fileOffset);
 $daad_version = fgetb($file);
 $daad_machine = fgetb($file);
 $daad_language = $daad_machine & 0x0F;
@@ -433,11 +447,11 @@ else
 {
   // Determine if it's a little endian old game or big endian game based on if it has or not extra attr.
 
-  fseek($file, 32);
+  fseek($file, 32 + $fileOffset);
   $file_length = (fgetb($file) << $SHR1) | (fgetb($file) << $SHR2 );
   if ($file_length!=filesize($argv[1])) // Not matching, check offset 30
   {
-    fseek($file, 30);
+    fseek($file, 30 + $fileOffset);
     $file_length = (fgetb($file) << $SHR1) | (fgetb($file) << $SHR2 );
     if ($file_length!=filesize($argv[1])) // Not matching, it's little endian
     {
@@ -449,7 +463,7 @@ else
 }
 
 // Read header data
-fseek($file, 2);
+fseek($file, 2 + $fileOffset);
 $nullword    = fgetb($file);
 $num_objs     = fgetb($file);
 $num_locs     = fgetb($file);
@@ -493,9 +507,10 @@ else
 
 $file_length-=$baseAddress;
 $filesize = filesize($argv[1]);
-if ($file_length!=$filesize)
+if ($file_length>$filesize)
 {
   echo ("Invalid DAAD header, length ($file_length) doesn't match file size ($filesize)!");
+  exit;
 }
 
 
@@ -566,7 +581,7 @@ if ($pos_tokens) // If no compression, $pos_tokens must be 0x0000
   // TOKENS
   if ($exportToDSF) write($output, ';');
   write($output, "/TOK\n");
-  fseek ($file, $pos_tokens + 1);  // It seems actual token table starts one byte after the one the header points to
+  fseek ($file, $pos_tokens + 1 + $fileOffset);  // It seems actual token table starts one byte after the one the header points to
   $tokenCount = 0;
   $token = '';
   while ($tokenCount<128)  // There should be exactly 128 tokens
@@ -587,7 +602,7 @@ if ($pos_tokens) // If no compression, $pos_tokens must be 0x0000
 //VOCABULARY
 printSeparator($output);
 write($output, "/VOC    ;Vocabulary\n");
-fseek ($file, $pos_vocabulary);
+fseek ($file, $pos_vocabulary +$fileOffset);
 while (1)
 {
   $c = fgetb($file);
@@ -624,9 +639,9 @@ for ($i = 0; $i < $num_msgs_sys; $i++)
     $message='';
     write($output, "/$i "); 
     if(!$exportToDSF) write($output,"\n");else write($output,"\"");
-    fseek ($file, $pos_list_pos_msgs_sys + (2 * $i));
+    fseek ($file, $pos_list_pos_msgs_sys + (2 * $i) + $fileOffset);
     $current_message_position = (fgetb($file) << $SHR1) | (fgetb($file) << $SHR2);
-    fseek ($file, $current_message_position - $baseAddress);
+    fseek ($file, $current_message_position - $baseAddress + $fileOffset);
     do
     {
       $c = fgetb($file);
@@ -666,9 +681,9 @@ for ($i = 0; $i < $num_msgs_usr; $i++)
     $message='';
     write($output, "/$i "); 
     if(!$exportToDSF) write($output,"\n");else write($output,"\"");
-    fseek ($file, $pos_list_pos_msgs_usr + (2 * $i));
+    fseek ($file, $pos_list_pos_msgs_usr + (2 * $i) + $fileOffset);
     $current_message_position = (fgetb($file) << $SHR1) | (fgetb($file) << $SHR2);
-    fseek ($file, $current_message_position - $baseAddress);
+    fseek ($file, $current_message_position - $baseAddress + $fileOffset);
     do
     {
       $c = fgetb($file);
@@ -707,9 +722,9 @@ for ($i = 0; $i < $num_objs; $i++)
     $message='';
     write($output, "/$i "); 
     if(!$exportToDSF) write($output,"\n");else write($output,"\"");
-    fseek ($file, $pos_list_pos_objs + (2 * $i));
+    fseek ($file, $pos_list_pos_objs + (2 * $i) + $fileOffset);
     $current_message_position = (fgetb($file) << $SHR1) | (fgetb($file) << $SHR2);
-    fseek ($file, $current_message_position - $baseAddress);
+    fseek ($file, $current_message_position - $baseAddress + $fileOffset);
     do
     {
       $c = fgetb($file);
@@ -750,9 +765,9 @@ for ($i = 0; $i < $num_locs; $i++)
     $message='';
     write($output, "/$i "); 
     if(!$exportToDSF) write($output,"\n");else write($output,"\"");
-    fseek ($file, $pos_list_pos_locs + (2 * $i));
+    fseek ($file, $pos_list_pos_locs + (2 * $i) + $fileOffset);
     $current_message_position = (fgetb($file) << $SHR1) | (fgetb($file) << $SHR2);
-    fseek ($file, $current_message_position - $baseAddress);
+    fseek ($file, $current_message_position - $baseAddress + $fileOffset);
     do
     {
       $c = fgetb($file);
@@ -789,9 +804,9 @@ for ($i = 0; $i < $num_locs; $i++)
   for ($i = 0; $i < $num_locs; $i++)
   {
     write($output, "/$i\n");
-    fseek ($file, $pos_list_pos_cnxs + (2 * $i));
+    fseek ($file, $pos_list_pos_cnxs + (2 * $i) + $fileOffset);
     $current_message_position = (fgetb($file) << $SHR1) | (fgetb($file)<<$SHR2);
-    fseek ($file, $current_message_position - $baseAddress);
+    fseek ($file, $current_message_position - $baseAddress + $fileOffset);
     while (($c = fgetb($file)) != 255)
     {
       if (isset($words[0][$c])) $word = $words[0][$c];
@@ -806,14 +821,14 @@ for ($i = 0; $i < $num_locs; $i++)
   write($output, ";obj.no  starts.at   weight    c w  5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0    noun    adjective\n");
   for ($i = 0; $i < $num_objs; $i++)
   {
-    fseek ($file, $pos_locs_objs + $i);
+    fseek ($file, $pos_locs_objs + $i + $fileOffset);
     write($output,str_pad("/$i ", 10));
     // initially at
     $loc = fgetb($file);
     $byteCode ="Loc: $loc ";
     write($output,str_pad(isset($specialLocs[$loc]) ? $specialLocs[$loc] : $loc, 13));
     // Object attributes
-    fseek ($file, $pos_attr_objs + $i );
+    fseek ($file, $pos_attr_objs + $i  + $fileOffset);
     $attr = fgetb($file);  //weight
     $byteCode .= "Attr/Weight: $attr ";
     $weigth = $attr & 0x3F;
@@ -825,7 +840,7 @@ for ($i = 0; $i < $num_locs; $i++)
 
     if (!$isOldGame)
     {
-      fseek ($file, $pos_extattr_objs + ($i * 2) );
+      fseek ($file, $pos_extattr_objs + ($i * 2)  + $fileOffset);
       $attrs = ((fgetb($file)<<$SHR1)) | ((fgetb($file)<<$SHR2));
       $byteCode .= "XAttr: $attrs ";
       for ($j=15;$j>=0;$j--)
@@ -835,7 +850,7 @@ for ($i = 0; $i < $num_locs; $i++)
     else write($output, "_ _  _ _ _ _ _ _ _ _ _ _ _ _ _ _    ");
 
     // Object noun + adjective
-    fseek ($file, $pos_noms_objs + ($i *2));
+    fseek ($file, $pos_noms_objs + ($i *2) + $fileOffset);
     $noun_id = fgetb($file);
     $adject_id = fgetb($file);
     $byteCode .= "Noun: $noun_id Adject: $adject_id ";
@@ -856,9 +871,9 @@ for ($i = 0; $i < $num_locs; $i++)
     for ($entry = 0; ; $entry++)
     {
       $entryOffsetPosition = $pos_list_pos_procs + (2 * $i);
-      fseek ($file, $entryOffsetPosition);
+      fseek ($file, $entryOffsetPosition + $fileOffset);
       $condactsOffset = ((fgetb($file) << $SHR1) | (fgetb($file)) << $SHR2) - $baseAddress;
-      fseek ($file, $condactsOffset);
+      fseek ($file, $condactsOffset + $fileOffset);
       fseek ($file, $entry*4, SEEK_CUR);
       $condactsOffset+=$entry*4;
       $c = fgetb($file);
@@ -875,7 +890,7 @@ for ($i = 0; $i < $num_locs; $i++)
       $nounCode = $c;
       write($output,str_pad($c == 255 ? "_" : $words[2][$c], 8));
       $condacts_pos = (fgetb($file) << $SHR1) | (fgetb($file) << $SHR2);
-      fseek ($file, $condacts_pos - $baseAddress); // condacts
+      fseek ($file, $condacts_pos - $baseAddress + $fileOffset); // condacts
       $first = true;
       $c = fgetb($file);
       while ($c != 255)
