@@ -652,12 +652,11 @@ for ($i = 0; $i < $num_msgs_sys; $i++)
         }
       else  
         {
-          if ($c < 127) 
+          if ($c < 128) 
             {
-              $token_id = $daad_to_iso8859_15[$c] - 128;
+              $token_id = $c ^ 0xff - 128;
               $thetoken = $tokens[$token_id];
               $message.=$thetoken;
-              $tid = $token_id + 128;
             } else 
             {
               $d = $daad_to_iso8859_15[$c];
@@ -694,12 +693,11 @@ for ($i = 0; $i < $num_msgs_usr; $i++)
         }
       else  
         {
-          if ($c < 127) 
+          if ($c < 128) 
             {
-              $token_id = $daad_to_iso8859_15[$c] - 128;
+              $token_id = $c ^ 0xff - 128;
               $thetoken = $tokens[$token_id];
               $message.=$thetoken;
-              $tid = $token_id + 128;
             } else 
             {
               $d = $daad_to_iso8859_15[$c];
@@ -735,12 +733,11 @@ for ($i = 0; $i < $num_objs; $i++)
         }
       else  
         {
-          if ($c < 127) 
+          if ($c < 128) 
             {
-              $token_id = $daad_to_iso8859_15[$c] - 128;
+              $token_id = $c ^ 0xff - 128;
               $thetoken = $tokens[$token_id];
               $message.=$thetoken;
-              $tid = $token_id + 128;
             } else 
             {
               $d = $daad_to_iso8859_15[$c];
@@ -778,12 +775,11 @@ for ($i = 0; $i < $num_locs; $i++)
         }
       else  
         {
-          if ($c < 127) 
+          if ($c < 128) 
             {
-              $token_id = $daad_to_iso8859_15[$c] - 128;
+              $token_id = $c ^ 0xff - 128;
               $thetoken = $tokens[$token_id];
               $message.=$thetoken;
-              $tid = $token_id + 128;
             } else 
             {
               $d = $daad_to_iso8859_15[$c];
