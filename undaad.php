@@ -645,10 +645,16 @@ for ($i = 0; $i < $num_msgs_sys; $i++)
               $tid = $token_id + 128;
             } else 
             {
-              $d = $daad_to_iso8859_15[$c];
-              if ($d != 10) $message.=chr($d); else  if (($d == 10) && (!$exportToDSF)) $message.=chr($d);
-            }
-        }
+                $d = $daad_to_iso8859_15[$c];
+                if ($d==0x0c) $message.= (($exportToDSF ? "#":"\\") . 'k');
+                else if ($d==0x0e) $message.= (($exportToDSF ? "#":"\\") . 'g');
+                else if ($d==0x0f) $message.= (($exportToDSF ? "#":"\\") . 't');
+                else if ($d==0x0b) $message.= (($exportToDSF ? "#":"\\") . 'b');
+                else if ($d==0x7f) $message.= (($exportToDSF ? "#":"\\") . 'f');
+                else if ($d==0x0d) $message.= ($exportToDSF ? "":"\\r");
+                else if (($d==0x0a) && ($exportToDSF)) $message.='#n';
+                else $message.=chr($d);            }
+           }
     } while ($c != 0xF5);  // 0x0A xor 255
     $message = str_replace(chr(13), '\n', $message);
     $message = str_replace('"', '\"', $message);
@@ -688,8 +694,14 @@ for ($i = 0; $i < $num_msgs_usr; $i++)
             } else 
             {
               $d = $daad_to_iso8859_15[$c];
-              if ($d != 10) $message.=chr($d); else  if (($d == 10) && (!$exportToDSF)) $message.=chr($d);
-            }
+              if ($d==0x0c) $message.= (($exportToDSF ? "#":"\\") . 'k');
+              else if ($d==0x0e) $message.= (($exportToDSF ? "#":"\\") . 'g');
+              else if ($d==0x0f) $message.= (($exportToDSF ? "#":"\\") . 't');
+              else if ($d==0x0b) $message.= (($exportToDSF ? "#":"\\") . 'b');
+              else if ($d==0x7f) $message.= (($exportToDSF ? "#":"\\") . 'f');
+              else if ($d==0x0d) $message.= (($exportToDSF ? "":"\\r"));
+              else if (($d==0x0a) && ($exportToDSF)) $message.='#n';
+              else $message.=chr($d);            }
         }
     } while ($c != 0xF5);  // 0x0A xor 255
     $message = str_replace(chr(13), '\n', $message);
@@ -772,8 +784,14 @@ for ($i = 0; $i < $num_locs; $i++)
             } else 
             {
               $d = $daad_to_iso8859_15[$c];
-              if ($d != 10) $message.=chr($d); else  if (($d == 10) && (!$exportToDSF)) $message.=chr($d);
-            }
+              if ($d==0x0c) $message.= (($exportToDSF ? "#":"\\") . 'k');
+              else if ($d==0x0e) $message.= (($exportToDSF ? "#":"\\") . 'g');
+              else if ($d==0x0f) $message.= (($exportToDSF ? "#":"\\") . 't');
+              else if ($d==0x0b) $message.= (($exportToDSF ? "#":"\\") . 'b');
+              else if ($d==0x7f) $message.= (($exportToDSF ? "#":"\\") . 'f');
+              else if ($d==0x0d) $message.= (($exportToDSF ? "":"\\r"));
+              else if (($d==0x0a) && ($exportToDSF)) $message.='#n';
+              else $message.=chr($d);            }
         }
     } while ($c != 0xF5);  // 0x0A xor 255
     $message = str_replace(chr(13), '\n', $message);
