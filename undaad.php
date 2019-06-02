@@ -1,7 +1,7 @@
 <?php
 
 
-// Original work copyright (C) 2008-2010, 2013 José Manuel Ferrer Ortiz
+// Original work copyright (C) 2008-2010, 2013 Josï¿½ Manuel Ferrer Ortiz
 // Fixes and completion copyright (C) Uto (2015-2019)
 
 
@@ -117,7 +117,7 @@ $wordParamTypes = array(
 );
 
 $specialLocs = array(
-  252 => '_',
+  252 => 'NOT_CREATED',
   253 => 'WORN',
   254 => 'CARRIED',
   255 => 'HERE'
@@ -893,11 +893,12 @@ for ($i = 0; $i < $num_locs; $i++)
       $c = fgetb($file);
       write($output, "\n");
       if ($c == 0)  break; // Process end
-      if ($c == 255) write($output,str_pad("_", 8)); else
+      if ($exportToDSF) $entrySign = "> "; else $entrySign ='';
+      if ($c == 255) write($output,str_pad($entrySign . "_", 8)); else
       {
         if (isset($words[0][$c])) $word = $words[0][$c];
         else if ((isset($words[2][$c])) && ($c<20)) $word = $words[2][$c];
-        write($output,str_pad("$word", 8));
+        write($output,str_pad($entrySign . "$word", 8));
       }
       $verbCode = $c;
       $c = fgetb($file);
