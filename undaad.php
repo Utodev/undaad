@@ -95,8 +95,6 @@ $isLittleEndian = false;
 $tokens=array();
 $words=array();
 
-
-
 $languages = array(
   0 => "English",
   1 => "Spanish"
@@ -584,11 +582,14 @@ if ($pos_tokens) // If no compression, $pos_tokens must be 0x0000
   fseek ($file, $pos_tokens + 1 + $fileOffset);  // It seems actual token table starts one byte after the one the header points to
   $tokenCount = 0;
   $token = '';
+  $c = fgetb($file); // Ignore first
   while ($tokenCount<128)  // There should be exactly 128 tokens
   {
     $c = fgetb($file);
+    
     if ($c==0) break;
     if ($c > 127) {
+      
       $token .=  chr($tokens_to_iso8859_15[$c & 127]);
       if ($exportToDSF) write($output, ';');
       write($output, "$token\n");
