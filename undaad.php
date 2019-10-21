@@ -681,7 +681,7 @@ for ($i = 0; $i < $num_msgs_sys; $i++)
 
 // USER MESSAGES
 printSeparator($output);
-write($output, "/MTX    ;Location Texts\n");
+write($output, "/MTX    ;Message Texts\n");
 for ($i = 0; $i < $num_msgs_usr; $i++)
   {
     $message='';
