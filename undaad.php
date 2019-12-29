@@ -296,6 +296,7 @@ function getBaseAddressByTarget($target)
   if ($target=='ZX') return 0x8400; else
   if ($target=='MSX') return 0x100; else
   if ($target=='CPC') return 0x2880; else
+  if ($target=='CP4') return 0x7080; else
   if ($target=='C64') return 0x3880;
 
   return 0;
@@ -312,6 +313,7 @@ function getTargetByMachineID($id)
   if ($id==5) return 'ST'; else
   if ($id==6) return 'AMIGA'; else
   if ($id==7) return 'PCW'; else
+  if ($id==0x0E) return 'CP4'; else
   if ($id==0x0F) return 'MSX2';
 };  
 
@@ -574,31 +576,34 @@ $pos_extattr_objs -= $baseAddress;
 // CONTROL
 write($output, "/CTL\n_\n");
 
-if ($pos_tokens) // If no compression, $pos_tokens must be 0x0000
+if (!$exportToDSF)
 {
-  // TOKENS
-  if ($exportToDSF) write($output, ';');
-  write($output, "/TOK\n");
-  fseek ($file, $pos_tokens + 1 + $fileOffset);  // It seems actual token table starts one byte after the one the header points to
-  $tokenCount = 0;
-  $token = '';
-  $c = fgetb($file); // Ignore first
-  while ($tokenCount<128)  // There should be exactly 128 tokens
+  if ($pos_tokens) // If no compression, $pos_tokens must be 0x0000
   {
-    $c = fgetb($file);
-    
-    if ($c==0) break;
-    if ($c > 127) {
+    // TOKENS
+    write($output, "/TOK\n");
+    fseek ($file, $pos_tokens + 1 + $fileOffset);  // It seems actual token table starts one byte after the one the header points to
+    $tokenCount = 0;
+    $token = '';
+    $c = fgetb($file); // Ignore first
+    while ($tokenCount<128)  // There should be exactly 128 tokens
+    {
+      $c = fgetb($file);
       
-      $token .=  chr($tokens_to_iso8859_15[$c & 127]);
-      if ($exportToDSF) write($output, ';');
-      write($output, "$token\n");
-      $tokens[$tokenCount] = str_replace('_', ' ',  $token);
-      $tokenCount++;
-      $token = '';
-    } else $token .=  chr($tokens_to_iso8859_15[$c]);
+      if ($c==0) break;
+      if ($c > 127) {
+        
+        $token .=  chr($tokens_to_iso8859_15[$c & 127]);
+        if ($exportToDSF) write($output, ';');
+        write($output, "$token\n");
+        $tokens[$tokenCount] = str_replace('_', ' ',  $token);
+        $tokenCount++;
+        $token = '';
+      } else $token .=  chr($tokens_to_iso8859_15[$c]);
+    }
   }
 }
+
 
 //VOCABULARY
 printSeparator($output);
@@ -677,7 +682,7 @@ for ($i = 0; $i < $num_msgs_sys; $i++)
     if($exportToDSF) write($output, "\"\n");
   }
 
-
+  
 
 // USER MESSAGES
 printSeparator($output);
