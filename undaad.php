@@ -95,8 +95,6 @@ $isLittleEndian = false;
 $tokens=array();
 $words=array();
 
-
-
 $languages = array(
   0 => "English",
   1 => "Spanish"
@@ -117,7 +115,7 @@ $wordParamTypes = array(
 );
 
 $specialLocs = array(
-  252 => '_',
+  252 => 'NOT_CREATED',
   253 => 'WORN',
   254 => 'CARRIED',
   255 => 'HERE'
@@ -298,6 +296,7 @@ function getBaseAddressByTarget($target)
   if ($target=='ZX') return 0x8400; else
   if ($target=='MSX') return 0x100; else
   if ($target=='CPC') return 0x2880; else
+  if ($target=='CP4') return 0x7080; else
   if ($target=='C64') return 0x3880;
 
   return 0;
@@ -314,6 +313,7 @@ function getTargetByMachineID($id)
   if ($id==5) return 'ST'; else
   if ($id==6) return 'AMIGA'; else
   if ($id==7) return 'PCW'; else
+  if ($id==0x0E) return 'CP4'; else
   if ($id==0x0F) return 'MSX2';
 };  
 
@@ -576,28 +576,34 @@ $pos_extattr_objs -= $baseAddress;
 // CONTROL
 write($output, "/CTL\n_\n");
 
-if ($pos_tokens) // If no compression, $pos_tokens must be 0x0000
+if (!$exportToDSF)
 {
-  // TOKENS
-  if ($exportToDSF) write($output, ';');
-  write($output, "/TOK\n");
-  fseek ($file, $pos_tokens + 1 + $fileOffset);  // It seems actual token table starts one byte after the one the header points to
-  $tokenCount = 0;
-  $token = '';
-  while ($tokenCount<128)  // There should be exactly 128 tokens
+  if ($pos_tokens) // If no compression, $pos_tokens must be 0x0000
   {
-    $c = fgetb($file);
-    if ($c==0) break;
-    if ($c > 127) {
-      $token .=  chr($tokens_to_iso8859_15[$c & 127]);
-      if ($exportToDSF) write($output, ';');
-      write($output, "$token\n");
-      $tokens[$tokenCount] = str_replace('_', ' ',  $token);
-      $tokenCount++;
-      $token = '';
-    } else $token .=  chr($tokens_to_iso8859_15[$c]);
+    // TOKENS
+    write($output, "/TOK\n");
+    fseek ($file, $pos_tokens + 1 + $fileOffset);  // It seems actual token table starts one byte after the one the header points to
+    $tokenCount = 0;
+    $token = '';
+    $c = fgetb($file); // Ignore first
+    while ($tokenCount<128)  // There should be exactly 128 tokens
+    {
+      $c = fgetb($file);
+      
+      if ($c==0) break;
+      if ($c > 127) {
+        
+        $token .=  chr($tokens_to_iso8859_15[$c & 127]);
+        if ($exportToDSF) write($output, ';');
+        write($output, "$token\n");
+        $tokens[$tokenCount] = str_replace('_', ' ',  $token);
+        $tokenCount++;
+        $token = '';
+      } else $token .=  chr($tokens_to_iso8859_15[$c]);
+    }
   }
 }
+
 
 //VOCABULARY
 printSeparator($output);
@@ -677,10 +683,16 @@ for ($i = 0; $i < $num_msgs_sys; $i++)
               $message.=$thetoken;
             } else 
             {
-              $d = $daad_to_iso8859_15[$c];
-              if ($d != 10) $message.=chr($d); else  if (($d == 10) && (!$exportToDSF)) $message.=chr($d);
-            }
-        }
+                $d = $daad_to_iso8859_15[$c];
+                if ($d==0x0c) $message.= (($exportToDSF ? "#":"\\") . 'k');
+                else if ($d==0x0e) $message.= (($exportToDSF ? "#":"\\") . 'g');
+                else if ($d==0x0f) $message.= (($exportToDSF ? "#":"\\") . 't');
+                else if ($d==0x0b) $message.= (($exportToDSF ? "#":"\\") . 'b');
+                else if ($d==0x7f) $message.= (($exportToDSF ? "#":"\\") . 'f');
+                else if ($d==0x0d) $message.= ($exportToDSF ? "":"\\r");
+                else if (($d==0x0a) && ($exportToDSF)) $message.='#n';
+                else $message.=chr($d);            }
+           }
     } while ($c != 0xF5);  // 0x0A xor 255
     $message = str_replace(chr(13), '\n', $message);
     $message = str_replace('"', '\"', $message);
@@ -688,11 +700,11 @@ for ($i = 0; $i < $num_msgs_sys; $i++)
     if($exportToDSF) write($output, "\"\n");
   }
 
-
+  
 
 // USER MESSAGES
 printSeparator($output);
-write($output, "/MTX    ;Location Texts\n");
+write($output, "/MTX    ;Message Texts\n");
 for ($i = 0; $i < $num_msgs_usr; $i++)
   {
     $message='';
@@ -719,8 +731,14 @@ for ($i = 0; $i < $num_msgs_usr; $i++)
             } else 
             {
               $d = $daad_to_iso8859_15[$c];
-              if ($d != 10) $message.=chr($d); else  if (($d == 10) && (!$exportToDSF)) $message.=chr($d);
-            }
+              if ($d==0x0c) $message.= (($exportToDSF ? "#":"\\") . 'k');
+              else if ($d==0x0e) $message.= (($exportToDSF ? "#":"\\") . 'g');
+              else if ($d==0x0f) $message.= (($exportToDSF ? "#":"\\") . 't');
+              else if ($d==0x0b) $message.= (($exportToDSF ? "#":"\\") . 'b');
+              else if ($d==0x7f) $message.= (($exportToDSF ? "#":"\\") . 'f');
+              else if ($d==0x0d) $message.= (($exportToDSF ? "":"\\r"));
+              else if (($d==0x0a) && ($exportToDSF)) $message.='#n';
+              else $message.=chr($d);            }
         }
     } while ($c != 0xF5);  // 0x0A xor 255
     $message = str_replace(chr(13), '\n', $message);
@@ -801,8 +819,14 @@ for ($i = 0; $i < $num_locs; $i++)
             } else 
             {
               $d = $daad_to_iso8859_15[$c];
-              if ($d != 10) $message.=chr($d); else  if (($d == 10) && (!$exportToDSF)) $message.=chr($d);
-            }
+              if ($d==0x0c) $message.= (($exportToDSF ? "#":"\\") . 'k');
+              else if ($d==0x0e) $message.= (($exportToDSF ? "#":"\\") . 'g');
+              else if ($d==0x0f) $message.= (($exportToDSF ? "#":"\\") . 't');
+              else if ($d==0x0b) $message.= (($exportToDSF ? "#":"\\") . 'b');
+              else if ($d==0x7f) $message.= (($exportToDSF ? "#":"\\") . 'f');
+              else if ($d==0x0d) $message.= (($exportToDSF ? "":"\\r"));
+              else if (($d==0x0a) && ($exportToDSF)) $message.='#n';
+              else $message.=chr($d);            }
         }
     } while ($c != 0xF5);  // 0x0A xor 255
     $message = str_replace(chr(13), '\n', $message);
@@ -893,11 +917,12 @@ for ($i = 0; $i < $num_locs; $i++)
       $c = fgetb($file);
       write($output, "\n");
       if ($c == 0)  break; // Process end
-      if ($c == 255) write($output,str_pad("_", 8)); else
+      if ($exportToDSF) $entrySign = "> "; else $entrySign ='';
+      if ($c == 255) write($output,str_pad($entrySign . "_", 8)); else
       {
         if (isset($words[0][$c])) $word = $words[0][$c][0];
         else if ((isset($words[2][$c])) && ($c<20)) $word = $words[2][$c][0];
-        write($output,str_pad("$word", 8));
+        write($output,str_pad($entrySign . "$word", 8));
       }
       $verbCode = $c;
       $c = fgetb($file);
