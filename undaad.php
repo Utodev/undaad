@@ -1,7 +1,7 @@
 <?php
 
 
-// Original work copyright (C) 2008-2010, 2013 José Manuel Ferrer Ortiz
+// Original work copyright (C) 2008-2010, 2013 Josï¿½ Manuel Ferrer Ortiz
 // Fixes and completion copyright (C) Uto (2015-2019)
 
 
@@ -601,16 +601,15 @@ if ($pos_tokens) // If no compression, $pos_tokens must be 0x0000
 
 //VOCABULARY
 printSeparator($output);
-write($output, "/VOC    ;Vocabulary\n");
+write($output, "/VOC    ;Vocabulary\n\n");
 fseek ($file, $pos_vocabulary +$fileOffset);
 while (1)
 {
   $c = fgetb($file);
   if (!$c) break;  // End of vocabulary list  
-  $currentWord = chr($c); $currentCodes = dechex($c) ." ";
+  $currentWord = chr($c); 
   $c = $daad_to_iso8859_15[$c];
-  $currentWord = chr($c); $currentCodes .= "($c) ";
-  for ($i=0;$i<4;$i++) 
+  $currentWord = chr($c);   for ($i=0;$i<4;$i++) 
   { 
     $c= fgetb($file);
     $currentCodes .=dechex($c). " ";
@@ -623,13 +622,32 @@ while (1)
   $wordType = fgetb($file);
   $currentCodes .= "type: $wordType) ";
   $wordTypeText = $wordTypes[$wordType];
-  if (!$verboseOutput) $currentCodes = ''; else $currentCodes = "; - $currentCodes -";
-  write($output,str_pad($currentWord, 8).str_pad($id, 8).$wordTypeText."$currentCodes\n");
+  // If verbose output, we dump vocabulary as it is fonund in the DDB file, because otherwise verbose data won't match the data in the DDB file  
+  if  ($verboseOutput) write($output,str_pad($currentWord, 8).str_pad($id, 8).$wordTypeText."; - $currentCodes\n");
   if (!isset($words[$wordType])) $words[$wordType] = array();
-  $words[$wordType][$id]=$currentWord;
+  if (!isset($words[$wordType][$id])) $words[$wordType][$id] = array();
+  $words[$wordType][$id][]=$currentWord;
 
 }
-for ($i=0;$i<7;$i++) $words[$i][255] = '_';
+
+// Otherwise, we dump the vacabulary in ordered by type and then by ID
+if (!$verboseOutput)
+foreach($words as $wordType=>$wordTypeArray)
+{
+  $wordTypeText = $wordTypes[$wordType];
+  write($output, "; $wordTypeText\n\n");
+  foreach($wordTypeArray as $id=>$wordArray)
+  {
+    foreach($wordArray as $word)
+    {
+      write($output, str_pad($word,8) . str_pad($wordtypeText,8). "$id\n");
+    }
+   }
+}
+
+
+  
+for ($i=0;$i<7;$i++) $words[$i][255] = array('_');
 
 // SYSTEM MESSAGES
 printSeparator($output);
@@ -805,8 +823,8 @@ for ($i = 0; $i < $num_locs; $i++)
     fseek ($file, $current_message_position - $baseAddress + $fileOffset);
     while (($c = fgetb($file)) != 255)
     {
-      if (isset($words[0][$c])) $word = $words[0][$c];
-      else if ((isset($words[2][$c])) && ($c<20)) $word = $words[2][$c];
+      if (isset($words[0][$c])) $word = $words[0][$c][0];
+      else if ((isset($words[2][$c])) && ($c<20)) $word = $words[2][$c][0];
       write($output, "$word " . fgetb($file) . "\n");
     } 
   }
@@ -850,9 +868,9 @@ for ($i = 0; $i < $num_locs; $i++)
     $noun_id = fgetb($file);
     $adject_id = fgetb($file);
     $byteCode .= "Noun: $noun_id Adject: $adject_id ";
-    write($output,str_pad($words[2][$noun_id], 7));
+    write($output,str_pad($words[2][$noun_id][0], 7));
     write($output,' ');
-    if ($adject_id == 255) write($output, "_"); else write($output,$words[3][$adject_id]);
+    if ($adject_id == 255) write($output, "_"); else write($output,$words[3][$adject_id][0]);
     if ($verboseOutput) write($output, " ; $byteCode");
     write($output, " \n");
   }
@@ -877,14 +895,14 @@ for ($i = 0; $i < $num_locs; $i++)
       if ($c == 0)  break; // Process end
       if ($c == 255) write($output,str_pad("_", 8)); else
       {
-        if (isset($words[0][$c])) $word = $words[0][$c];
-        else if ((isset($words[2][$c])) && ($c<20)) $word = $words[2][$c];
+        if (isset($words[0][$c])) $word = $words[0][$c][0];
+        else if ((isset($words[2][$c])) && ($c<20)) $word = $words[2][$c][0];
         write($output,str_pad("$word", 8));
       }
       $verbCode = $c;
       $c = fgetb($file);
       $nounCode = $c;
-      write($output,str_pad($c == 255 ? "_" : $words[2][$c], 8));
+      write($output,str_pad($c == 255 ? "_" : $words[2][$c][0], 8));
       $condacts_pos = (fgetb($file) << $SHR1) | (fgetb($file) << $SHR2);
       fseek ($file, $condacts_pos - $baseAddress + $fileOffset); // condacts
       $first = true;
@@ -910,8 +928,8 @@ for ($i = 0; $i < $num_locs; $i++)
         {
           $val = fgetb($file);
           $byteCode .= "$val ";
-          if (isset($wordParamTypes[$opcode][$j]) && isset($words[$wordParamTypes[$opcode][$j]][$val])) 
-            write($output,$words[$wordParamTypes[$opcode][$j]][$val]." ");
+          if (isset($wordParamTypes[$opcode][$j]) && isset($words[$wordParamTypes[$opcode][$j]][$val][0])) 
+            write($output,$words[$wordParamTypes[$opcode][$j]][$val][0]." ");
           else 
           {
             if ($exportToDSF) write($output,(($indirection) && ($j==0) ? "@$val " : "$val "));
